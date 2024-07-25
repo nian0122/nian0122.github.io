@@ -6,15 +6,15 @@
   
   <title>如何部署Docker-MySQL | Hexo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <meta name="description" content="启动一个 MySQL Docker 容器并配置其基本参数，可以使用以下命令。本文将逐步解释命令中的各个部分。 12345678910bash复制代码sudo docker run -d \  --name syr-mysql \  -p 3306:3306 \  -e TZ&#x3D;Asia&#x2F;Shanghai \  -e MYSQL_ROOT_PASSWORD&#x3D;123 \  -v &#x2F;home&#x2F;syr&#x2F;my">
+  <meta name="description" content="启动一个 MySQL Docker 容器并配置其基本参数，可以使用以下命令。本文将逐步解释命令中的各个部分。 12345678910sudo docker run -d \  --name syr-mysql \  -p 3306:3306 \  -e TZ&#x3D;Asia&#x2F;Shanghai \  -e MYSQL_ROOT_PASSWORD&#x3D;123 \  -v &#x2F;home&#x2F;syr&#x2F;mysql&#x2F;data">
 <meta property="og:type" content="article">
 <meta property="og:title" content="如何部署Docker-MySQL">
 <meta property="og:url" content="http://example.com/2024/07/25/%E5%A6%82%E4%BD%95%E9%83%A8%E7%BD%B2Docker-MySQL/index.html">
 <meta property="og:site_name" content="Hexo">
-<meta property="og:description" content="启动一个 MySQL Docker 容器并配置其基本参数，可以使用以下命令。本文将逐步解释命令中的各个部分。 12345678910bash复制代码sudo docker run -d \  --name syr-mysql \  -p 3306:3306 \  -e TZ&#x3D;Asia&#x2F;Shanghai \  -e MYSQL_ROOT_PASSWORD&#x3D;123 \  -v &#x2F;home&#x2F;syr&#x2F;my">
+<meta property="og:description" content="启动一个 MySQL Docker 容器并配置其基本参数，可以使用以下命令。本文将逐步解释命令中的各个部分。 12345678910sudo docker run -d \  --name syr-mysql \  -p 3306:3306 \  -e TZ&#x3D;Asia&#x2F;Shanghai \  -e MYSQL_ROOT_PASSWORD&#x3D;123 \  -v &#x2F;home&#x2F;syr&#x2F;mysql&#x2F;data">
 <meta property="og:locale" content="en_US">
 <meta property="article:published_time" content="2024-07-25T02:21:12.000Z">
-<meta property="article:modified_time" content="2024-07-25T03:07:43.017Z">
+<meta property="article:modified_time" content="2024-07-25T03:41:19.909Z">
 <meta property="article:author" content="John Doe">
 <meta property="article:tag" content="部署">
 <meta property="article:tag" content="Docker">
@@ -97,7 +97,7 @@
     <div class="e-content article-entry" itemprop="articleBody">
       
         <p>启动一个 MySQL Docker 容器并配置其基本参数，可以使用以下命令。本文将逐步解释命令中的各个部分。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">bash复制代码sudo docker run -d \</span><br><span class="line">  --name syr-mysql \</span><br><span class="line">  -p 3306:3306 \</span><br><span class="line">  -e TZ=Asia/Shanghai \</span><br><span class="line">  -e MYSQL_ROOT_PASSWORD=123 \</span><br><span class="line">  -v /home/syr/mysql/data:/var/lib/mysql \</span><br><span class="line">  -v /home/syr/mysql/conf:/etc/mysql/conf.d \</span><br><span class="line">  -v /home/syr/mysql/init:/docker-entrypoint-initdb.d \</span><br><span class="line">  --network syr \</span><br><span class="line">  mysql</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">sudo docker run -d \</span><br><span class="line">  --name syr-mysql \</span><br><span class="line">  -p 3306:3306 \</span><br><span class="line">  -e TZ=Asia/Shanghai \</span><br><span class="line">  -e MYSQL_ROOT_PASSWORD=123 \</span><br><span class="line">  -v /home/syr/mysql/data:/var/lib/mysql \</span><br><span class="line">  -v /home/syr/mysql/conf:/etc/mysql/conf.d \</span><br><span class="line">  -v /home/syr/mysql/init:/docker-entrypoint-initdb.d \</span><br><span class="line">  --network syr \</span><br><span class="line">  mysql</span><br></pre></td></tr></table></figure>
 
 <h2 id="详细解释"><a href="#详细解释" class="headerlink" title="详细解释"></a>详细解释</h2><h3 id="1-运行权限"><a href="#1-运行权限" class="headerlink" title="1. 运行权限"></a>1. 运行权限</h3><p>**<code>sudo</code>**：以超级用户权限运行 Docker 命令。这通常是为了确保有足够的权限来执行 Docker 命令。</p>
 <h3 id="2-分离模式"><a href="#2-分离模式" class="headerlink" title="2. 分离模式"></a>2. 分离模式</h3><p>**<code>docker run -d</code>**：以分离模式（detached mode）运行一个新的容器。容器将在后台运行。</p>
