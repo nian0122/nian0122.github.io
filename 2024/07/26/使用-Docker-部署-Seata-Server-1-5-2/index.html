@@ -22,7 +22,7 @@
 
   
 
-  <title>使用 Docker 部署 Elasticsearch 7.12.1 和 Kibana 7.12.1 | Hexo</title>
+  <title>使用 Docker 部署 Seata Server 1.5.2 | Hexo</title>
 
   
 
@@ -99,15 +99,15 @@
     <div class="header-content">
       <div class="post-text layout-block">
         <div class="layout-margin">
-          <h1 class="title-wrap">使用 Docker 部署 Elasticsearch 7.12.1 和 Kibana 7.12.1</h1>
+          <h1 class="title-wrap">使用 Docker 部署 Seata Server 1.5.2</h1>
           <h2 class="title-sub-wrap">
             <strong>Nianer</strong>
             <span>发布于</span>
-            <time  class="article-date" datetime="2024-07-26T06:31:48.000Z" itemprop="datePublished">2024-07-26</time>
+            <time  class="article-date" datetime="2024-07-26T06:57:24.000Z" itemprop="datePublished">2024-07-26</time>
           </h2>
           
           
-            <h2 id="/2024/07/26/%E4%BD%BF%E7%94%A8-Docker-%E9%83%A8%E7%BD%B2-Elasticsearch-7-12-1-%E5%92%8C-Kibana-7-12-1/" class="title-sub-wrap leancloud_visitors" data-flag-title="使用 Docker 部署 Elasticsearch 7.12.1 和 Kibana 7.12.1">
+            <h2 id="/2024/07/26/%E4%BD%BF%E7%94%A8-Docker-%E9%83%A8%E7%BD%B2-Seata-Server-1-5-2/" class="title-sub-wrap leancloud_visitors" data-flag-title="使用 Docker 部署 Seata Server 1.5.2">
               <em>文章访问量</em>
               <i class="leancloud-visitors-count"></i>
             </h2>
@@ -121,9 +121,9 @@
   
     <li><a href="/tags/Docker/">🏷️ Docker</a></li>
   
-    <li><a href="/tags/Elasticsearch/">🏷️ Elasticsearch</a></li>
+    <li><a href="/tags/Seata/">🏷️ Seata</a></li>
   
-    <li><a href="/tags/Kibana/">🏷️ Kibana</a></li>
+    <li><a href="/tags/%E5%AE%B9%E5%99%A8%E5%8C%96/">🏷️ 容器化</a></li>
   
 </ul>
         </div>
@@ -147,78 +147,63 @@
       
       
       <section class="article-entry markdown-body layout-margin content-padding--large soft-size--large soft-style--box">
-        <p>在本教程中，我们将介绍如何使用 Docker 部署 Elasticsearch 7.12.1 和 Kibana 7.12.1，并将它们连接在一起。通过这些步骤，您将能够快速启动并运行一个完整的 Elasticsearch 和 Kibana 环境。</p>
-<h2 id="前提条件"><a href="#前提条件" class="headerlink" title="前提条件"></a>前提条件</h2><p>在开始之前，请确保您的系统已安装以下软件：</p>
-<ul>
-<li>Docker</li>
-<li>Docker Compose</li>
+        <p>在本文中，我们将介绍如何使用 Docker 来部署 Seata Server 1.5.2。我们将配置 IP 地址，挂载配置文件目录，并设置端口映射和网络配置。</p>
+<h2 id="部署命令"><a href="#部署命令" class="headerlink" title="部署命令"></a>部署命令</h2><p>以下是用于部署 Seata Server 容器的 Docker 命令：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">docker run --name seata \</span><br><span class="line">  -p 8099:8099 \</span><br><span class="line">  -p 7099:7099 \</span><br><span class="line">  -e SEATA_IP=192.168.150.101 \</span><br><span class="line">  -v ./seata:/seata-server/resources \</span><br><span class="line">  --privileged=true \</span><br><span class="line">  --network hm-net \</span><br><span class="line">  -d \</span><br><span class="line">  seataio/seata-server:1.5.2</span><br></pre></td></tr></table></figure>
+
+<h2 id="命令详解"><a href="#命令详解" class="headerlink" title="命令详解"></a>命令详解</h2><h3 id="容器名称"><a href="#容器名称" class="headerlink" title="容器名称"></a>容器名称</h3><ul>
+<li>**<code>--name seata</code>**：为容器指定一个名称 <code>seata</code>。这样可以更方便地管理和访问这个容器。</li>
 </ul>
-<h2 id="创建-Docker-网络"><a href="#创建-Docker-网络" class="headerlink" title="创建 Docker 网络"></a>创建 Docker 网络</h2><p>首先，我们需要创建一个自定义的 Docker 网络，使 Elasticsearch 和 Kibana 可以在同一网络内通信。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker network create hm-net</span><br></pre></td></tr></table></figure>
-
-<h2 id="部署-Elasticsearch"><a href="#部署-Elasticsearch" class="headerlink" title="部署 Elasticsearch"></a>部署 Elasticsearch</h2><p>接下来，我们将部署一个 Elasticsearch 实例。使用以下命令启动 Elasticsearch 容器：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">docker run -d \</span><br><span class="line">  --name es \</span><br><span class="line">  -e &quot;ES_JAVA_OPTS=-Xms512m -Xmx512m&quot; \</span><br><span class="line">  -e &quot;discovery.type=single-node&quot; \</span><br><span class="line">  -v $(pwd)/elasticsearch/data:/usr/share/elasticsearch/data \</span><br><span class="line">  -v es-plugins:/usr/share/elasticsearch/plugins \</span><br><span class="line">  --privileged \</span><br><span class="line">  --network hm-net \</span><br><span class="line">  -p 9200:9200 \</span><br><span class="line">  -p 9300:9300 \</span><br><span class="line">  elasticsearch:7.12.1</span><br></pre></td></tr></table></figure>
-
-<p>此命令将会：</p>
-<ul>
-<li>启动一个名为 <code>es</code> 的 Elasticsearch 容器。</li>
-<li>设置 Java 堆内存大小为 512MB。</li>
-<li>配置 Elasticsearch 以单节点模式运行。</li>
-<li>将主机上的 <code>elasticsearch/data</code> 目录挂载到容器中的 <code>/usr/share/elasticsearch/data</code>。</li>
-<li>将名为 <code>es-plugins</code> 的 Docker 卷挂载到容器中的 <code>/usr/share/elasticsearch/plugins</code>。</li>
-<li>启用特权模式运行容器。</li>
-<li>将容器连接到 <code>hm-net</code> 网络。</li>
-<li>将主机的 9200 端口映射到容器的 9200 端口。</li>
-<li>将主机的 9300 端口映射到容器的 9300 端口。</li>
+<h3 id="端口映射"><a href="#端口映射" class="headerlink" title="端口映射"></a>端口映射</h3><ul>
+<li>**<code>-p 8099:8099</code>**：将主机的 8099 端口映射到容器的 8099 端口。这是 Seata Server 的管理端口。</li>
+<li>**<code>-p 7099:7099</code>**：将主机的 7099 端口映射到容器的 7099 端口。这是 Seata Server 的服务端口。</li>
 </ul>
-<h2 id="部署-Kibana"><a href="#部署-Kibana" class="headerlink" title="部署 Kibana"></a>部署 Kibana</h2><p>现在，我们可以部署 Kibana 并连接到我们刚刚启动的 Elasticsearch 实例。使用以下命令启动 Kibana：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">docker run -d \</span><br><span class="line">  --name kibana \</span><br><span class="line">  -e ELASTICSEARCH_HOSTS=http://es:9200 \</span><br><span class="line">  --network=hm-net \</span><br><span class="line">  -p 5601:5601 \</span><br><span class="line">  kibana:7.12.1</span><br></pre></td></tr></table></figure>
-
-<p>此命令将会：</p>
-<ul>
-<li>启动一个名为 <code>kibana</code> 的 Kibana 容器。</li>
-<li>设置 Kibana 连接到 Elasticsearch 实例（位于 <code>http://es:9200</code>）。</li>
-<li>将容器连接到 <code>hm-net</code> 网络。</li>
-<li>将主机的 5601 端口映射到容器的 5601 端口。</li>
+<h3 id="环境变量"><a href="#环境变量" class="headerlink" title="环境变量"></a>环境变量</h3><ul>
+<li>**<code>-e SEATA_IP=192.168.150.101</code>**：设置 Seata Server 的 IP 地址为 <code>192.168.150.101</code>。这个 IP 地址是容器运行所在主机的 IP 地址，其他服务需要通过这个 IP 地址与 Seata Server 进行通信。</li>
 </ul>
-<h2 id="验证部署"><a href="#验证部署" class="headerlink" title="验证部署"></a>验证部署</h2><p>部署完成后，您可以通过访问 <code>http://localhost:5601</code> 来验证 Kibana 是否成功启动。如果一切正常，您应该会看到 Kibana 的欢迎页面。</p>
-<h2 id="详细解释"><a href="#详细解释" class="headerlink" title="详细解释"></a>详细解释</h2><h3 id="创建自定义-Docker-网络"><a href="#创建自定义-Docker-网络" class="headerlink" title="创建自定义 Docker 网络"></a>创建自定义 Docker 网络</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker network create hm-net</span><br></pre></td></tr></table></figure>
-
-<p>这条命令创建了一个名为 <code>hm-net</code> 的 Docker 网络，使得 Elasticsearch 和 Kibana 可以在同一网络内进行通信。</p>
-<h3 id="部署-Elasticsearch-1"><a href="#部署-Elasticsearch-1" class="headerlink" title="部署 Elasticsearch"></a>部署 Elasticsearch</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">docker run -d \</span><br><span class="line">  --name es \</span><br><span class="line">  -e &quot;ES_JAVA_OPTS=-Xms512m -Xmx512m&quot; \</span><br><span class="line">  -e &quot;discovery.type=single-node&quot; \</span><br><span class="line">  -v $(pwd)/elasticsearch/data:/usr/share/elasticsearch/data \</span><br><span class="line">  -v es-plugins:/usr/share/elasticsearch/plugins \</span><br><span class="line">  --privileged \</span><br><span class="line">  --network hm-net \</span><br><span class="line">  -p 9200:9200 \</span><br><span class="line">  -p 9300:9300 \</span><br><span class="line">  elasticsearch:7.12.1</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><code>-d</code>：以分离模式（后台运行）启动容器。</li>
-<li><code>--name es</code>：指定容器名称为 <code>es</code>。</li>
-<li><code>-e &quot;ES_JAVA_OPTS=-Xms512m -Xmx512m&quot;</code>：设置 Java 堆内存大小为 512MB。</li>
-<li><code>-e &quot;discovery.type=single-node&quot;</code>：设置 Elasticsearch 为单节点模式。</li>
-<li><code>-v $(pwd)/elasticsearch/data:/usr/share/elasticsearch/data</code>：将主机上的 <code>elasticsearch/data</code> 目录挂载到容器中的 <code>/usr/share/elasticsearch/data</code>。</li>
-<li><code>-v es-plugins:/usr/share/elasticsearch/plugins</code>：将名为 <code>es-plugins</code> 的 Docker 卷挂载到容器中的 <code>/usr/share/elasticsearch/plugins</code>。</li>
-<li><code>--privileged</code>：启用特权模式运行容器。</li>
-<li><code>--network hm-net</code>：将容器连接到 <code>hm-net</code> 网络。</li>
-<li><code>-p 9200:9200</code>：将主机的 9200 端口映射到容器的 9200 端口。</li>
-<li><code>-p 9300:9300</code>：将主机的 9300 端口映射到容器的 9300 端口。</li>
-<li><code>elasticsearch:7.12.1</code>：指定使用 Elasticsearch 7.12.1 镜像。</li>
+<h3 id="挂载卷"><a href="#挂载卷" class="headerlink" title="挂载卷"></a>挂载卷</h3><ul>
+<li>**<code>-v ./seata:/seata-server/resources</code>**：将当前目录下的 <code>seata</code> 目录挂载到容器的 <code>/seata-server/resources</code> 目录。这样可以在主机上管理 Seata Server 的配置文件。</li>
 </ul>
-<h3 id="部署-Kibana-1"><a href="#部署-Kibana-1" class="headerlink" title="部署 Kibana"></a>部署 Kibana</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">docker run -d \</span><br><span class="line">  --name kibana \</span><br><span class="line">  -e ELASTICSEARCH_HOSTS=http://es:9200 \</span><br><span class="line">  --network=hm-net \</span><br><span class="line">  -p 5601:5601 \</span><br><span class="line">  kibana:7.12.1</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><code>-d</code>：以分离模式（后台运行）启动容器。</li>
-<li><code>--name kibana</code>：指定容器名称为 <code>kibana</code>。</li>
-<li><code>-e ELASTICSEARCH_HOSTS=http://es:9200</code>：设置环境变量，使 Kibana 连接到 Elasticsearch 实例。</li>
-<li><code>--network=hm-net</code>：将容器连接到 <code>hm-net</code> 网络。</li>
-<li><code>-p 5601:5601</code>：将主机的 5601 端口映射到容器的 5601 端口。</li>
-<li><code>kibana:7.12.1</code>：指定使用 Kibana 7.12.1 镜像。</li>
+<h3 id="特权模式"><a href="#特权模式" class="headerlink" title="特权模式"></a>特权模式</h3><ul>
+<li>**<code>--privileged=true</code>**：以特权模式运行容器。这允许容器内的进程拥有更高的权限，这在某些需要访问特定系统资源的情况下是必要的。</li>
 </ul>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>通过以上步骤，我们成功使用 Docker 部署了 Elasticsearch 7.12.1 和 Kibana 7.12.1，并将它们连接在一起。现在，您可以通过 Kibana 来探索和可视化 Elasticsearch 中的数据。</p>
-<p>如果遇到任何问题，请检查容器的日志以获取更多调试信息：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">docker logs es</span><br><span class="line">docker logs kibana</span><br></pre></td></tr></table></figure>
+<h3 id="网络配置"><a href="#网络配置" class="headerlink" title="网络配置"></a>网络配置</h3><ul>
+<li>**<code>--network hm-net</code>**：将容器连接到名为 <code>hm-net</code> 的 Docker 网络中。这样，容器可以与同一个网络中的其他容器通信。</li>
+</ul>
+<h3 id="分离模式"><a href="#分离模式" class="headerlink" title="分离模式"></a>分离模式</h3><ul>
+<li>**<code>-d</code>**：以分离模式（后台运行）启动容器。容器将在后台运行，不会占用当前的终端会话。</li>
+</ul>
+<h3 id="使用的镜像"><a href="#使用的镜像" class="headerlink" title="使用的镜像"></a>使用的镜像</h3><ul>
+<li>**<code>seataio/seata-server:1.5.2</code>**：指定使用 <code>seataio/seata-server:1.5.2</code> 镜像来创建容器。这是 Seata Server 1.5.2 版本的镜像。</li>
+</ul>
+<h2 id="完整的部署步骤"><a href="#完整的部署步骤" class="headerlink" title="完整的部署步骤"></a>完整的部署步骤</h2><ol>
+<li><p><strong>创建挂载目录</strong>：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mkdir -p ./seata</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><strong>下载并配置 Seata Server</strong>：将所需的配置文件（如 <code>registry.conf</code> 和 <code>file.conf</code>）放入 <code>./seata</code> 目录下。</p>
+</li>
+<li><p><strong>运行 Seata Server 容器</strong>：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">docker run --name seata \</span><br><span class="line">  -p 8099:8099 \</span><br><span class="line">  -p 7099:7099 \</span><br><span class="line">  -e SEATA_IP=192.168.150.101 \</span><br><span class="line">  -v ./seata:/seata-server/resources \</span><br><span class="line">  --privileged=true \</span><br><span class="line">  --network hm-net \</span><br><span class="line">  -d \</span><br><span class="line">  seataio/seata-server:1.5.2</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h2 id="访问-Seata-Server"><a href="#访问-Seata-Server" class="headerlink" title="访问 Seata Server"></a>访问 Seata Server</h2><p>部署完成后，你可以通过以下地址访问 Seata Server：</p>
+<ul>
+<li><strong>管理端口</strong>: <code>http://192.168.150.101:8099</code></li>
+<li><strong>服务端口</strong>: <code>http://192.168.150.101:7099</code></li>
+</ul>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>通过以上步骤，你已经成功使用 Docker 部署了 Seata Server 1.5.2。这个容器化的 Seata Server 实例具有以下特性：</p>
+<ul>
+<li>使用特定的 IP 地址进行通信。</li>
+<li>主机目录挂载到容器中以管理配置文件。</li>
+<li>映射必要的端口以便于管理和服务访问。</li>
+<li>连接到指定的 Docker 网络以实现容器间通信。</li>
+</ul>
 
       </section>
 
       
       
         <nav class="article-nav">
+          
           
             <div class="article-nav-item layout-padding">
   <article class="card-container article-nav-card content-padding--primary soft-size--large soft-style--box">
@@ -227,21 +212,6 @@
       
         <a href="/2024/07/26/%E4%BD%BF%E7%94%A8-Docker-%E9%83%A8%E7%BD%B2-RabbitMQ-3-8-%E7%AE%A1%E7%90%86%E7%89%88/" itemprop="url">
           <h2 class="card-text--title text-ellipsis">使用 Docker 部署 RabbitMQ 3.8 管理版</h2>
-        </a>
-      
-      <div class="card-text--row">Newer</div>
-    </div>
-  </article>
-</div>
-          
-          
-            <div class="article-nav-item layout-padding">
-  <article class="card-container article-nav-card content-padding--primary soft-size--large soft-style--box">
-    
-    <div class="card-text">
-      
-        <a href="/2024/07/26/%E4%BD%BF%E7%94%A8-Docker-%E9%83%A8%E7%BD%B2-redis/" itemprop="url">
-          <h2 class="card-text--title text-ellipsis">使用 Docker 部署 redis</h2>
         </a>
       
       <div class="card-text--row">Older</div>
