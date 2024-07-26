@@ -22,7 +22,7 @@
 
   
 
-  <title>你好！世界 | Hexo</title>
+  <title>如何部署Docker-redis | Hexo</title>
 
   
 
@@ -99,11 +99,11 @@
     <div class="header-content">
       <div class="post-text layout-block">
         <div class="layout-margin">
-          <h1 class="title-wrap">你好！世界</h1>
+          <h1 class="title-wrap">如何部署Docker-redis</h1>
           <h2 class="title-sub-wrap">
             <strong>Nianer</strong>
             <span>发布于</span>
-            <time  class="article-date" datetime="2024-07-25T02:34:28.645Z" itemprop="datePublished">2024-07-25</time>
+            <time  class="article-date" datetime="2024-07-26T06:12:58.000Z" itemprop="datePublished">2024-07-26</time>
           </h2>
           
           
@@ -111,6 +111,8 @@
   
 </ul>
           <ul class="wrap-list dark">
+  
+    <li><a href="/tags/%E9%83%A8%E7%BD%B2-Docker-redis/">🏷️ -部署 -Docker -redis</a></li>
   
 </ul>
         </div>
@@ -134,19 +136,48 @@
       
       
       <section class="article-entry markdown-body layout-margin content-padding--large soft-size--large soft-style--box">
-        <p>欢迎使用 <a target="_blank" rel="noopener" href="https://hexo.io/">Hexo</a>! 这是你的第一篇文章。查阅 <a target="_blank" rel="noopener" href="https://hexo.io/docs/">文档</a> 获取更多信息。如果在使用 Hexo 时遇到问题，可以在 <a target="_blank" rel="noopener" href="https://hexo.io/docs/troubleshooting.html">故障排除</a> 中找到答案，或者在 <a target="_blank" rel="noopener" href="https://github.com/hexojs/hexo/issues">GitHub</a> 上向我提问。</p>
-<h2 id="快速开始"><a href="#快速开始" class="headerlink" title="快速开始"></a>快速开始</h2><h3 id="创建新文章"><a href="#创建新文章" class="headerlink" title="创建新文章"></a>创建新文章</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new &quot;我的新文章&quot;</span><br></pre></td></tr></table></figure>
+        <h2 id="准备挂载目录和文件"><a href="#准备挂载目录和文件" class="headerlink" title="准备挂载目录和文件"></a>准备挂载目录和文件</h2><h3 id="创建挂载目录"><a href="#创建挂载目录" class="headerlink" title="创建挂载目录"></a>创建挂载目录</h3><p>使用以下命令在你的工作目录中创建挂载目录和子目录：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"># 创建主目录</span><br><span class="line">mkdir redis</span><br><span class="line"></span><br><span class="line"># 存放配置文件的目录</span><br><span class="line">mkdir redis/conf</span><br><span class="line"></span><br><span class="line"># 存放数据文件的目录</span><br><span class="line">mkdir redis/data</span><br></pre></td></tr></table></figure>
 
-<p>更多信息请参考：<a target="_blank" rel="noopener" href="https://hexo.io/docs/writing.html">写作</a></p>
-<h3 id="启动服务器"><a href="#启动服务器" class="headerlink" title="启动服务器"></a>启动服务器</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
+<h2 id="准备-redis-conf-配置文件"><a href="#准备-redis-conf-配置文件" class="headerlink" title="准备 redis.conf 配置文件"></a>准备 <code>redis.conf</code> 配置文件</h2><p>由于 Docker 部署 Redis 后，Redis 容器中默认没有 <code>redis.conf</code> 配置文件，因此需要手动将其挂载进去。请按照以下步骤操作：</p>
+<h3 id="方法一：手动下载配置文件"><a href="#方法一：手动下载配置文件" class="headerlink" title="方法一：手动下载配置文件"></a>方法一：手动下载配置文件</h3><ol>
+<li><strong>下载 <code>redis.conf</code> 配置文件</strong>： 访问 Redis configuration 页面，下载对应版本的 <code>redis.conf</code> 文件。</li>
+<li><strong>保存配置文件</strong>： 将下载的 <code>redis.conf</code> 文件放到 <code>redis/conf</code> 目录下。</li>
+</ol>
+<h3 id="方法二：快速建立-Redis-容器并复制配置文件"><a href="#方法二：快速建立-Redis-容器并复制配置文件" class="headerlink" title="方法二：快速建立 Redis 容器并复制配置文件"></a>方法二：快速建立 Redis 容器并复制配置文件</h3><ol>
+<li><p><strong>启动 Redis 容器</strong>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run --name some-redis -d redis</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><strong>复制配置文件</strong>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker cp some-redis:/usr/local/etc/redis/redis.conf ./redis/conf</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><strong>停止并删除临时 Redis 容器</strong>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">docker stop some-redis</span><br><span class="line">docker rm some-redis</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h3 id="修改-redis-conf-配置文件"><a href="#修改-redis-conf-配置文件" class="headerlink" title="修改 redis.conf 配置文件"></a>修改 <code>redis.conf</code> 配置文件</h3><p>根据需要修改以下配置项：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"># 保护模式，默认为 yes，只有本机才可以访问 Redis</span><br><span class="line"># 如果需要提供给其他机器访问则修改为 no</span><br><span class="line">protected-mode no</span><br><span class="line"></span><br><span class="line"># 绑定 IP，默认是打开的</span><br><span class="line"># 注释掉这一行，使容器外部可以连接 Redis</span><br><span class="line"># bind 127.0.0.1</span><br><span class="line"></span><br><span class="line"># 密码，设置后连接 Redis 时需要输入密码</span><br><span class="line">requirepass 123456</span><br><span class="line"></span><br><span class="line"># 持久化配置，用来确保 Redis 数据在服务重启或关闭时不丢失</span><br><span class="line">appendonly yes</span><br></pre></td></tr></table></figure>
 
-<p>更多信息请参考：<a target="_blank" rel="noopener" href="https://hexo.io/docs/server.html">服务器</a></p>
-<h3 id="生成静态文件"><a href="#生成静态文件" class="headerlink" title="生成静态文件"></a>生成静态文件</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
+<h2 id="完整步骤总结"><a href="#完整步骤总结" class="headerlink" title="完整步骤总结"></a>完整步骤总结</h2><h3 id="1-创建目录"><a href="#1-创建目录" class="headerlink" title="1. 创建目录"></a>1. 创建目录</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mkdir -p redis/conf redis/data</span><br></pre></td></tr></table></figure>
 
-<p>更多信息请参考：<a target="_blank" rel="noopener" href="https://hexo.io/docs/generating.html">生成</a></p>
-<h3 id="部署到远程站点"><a href="#部署到远程站点" class="headerlink" title="部署到远程站点"></a>部署到远程站点</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
+<h3 id="2-获取-redis-conf-文件"><a href="#2-获取-redis-conf-文件" class="headerlink" title="2. 获取 redis.conf 文件"></a>2. 获取 <code>redis.conf</code> 文件</h3><p>选择以下方法之一：</p>
+<ul>
+<li><p><strong>手动下载</strong>： 访问 Redis configuration 页面，下载并保存到 <code>redis/conf</code> 目录。</p>
+</li>
+<li><p><strong>快速复制</strong>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">docker run --name some-redis -d redis</span><br><span class="line">docker cp some-redis:/usr/local/etc/redis/redis.conf ./redis/conf</span><br><span class="line">docker stop some-redis</span><br><span class="line">docker rm some-redis</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h3 id="3-编辑-redis-conf"><a href="#3-编辑-redis-conf" class="headerlink" title="3. 编辑 redis.conf"></a>3. 编辑 <code>redis.conf</code></h3><p>下载并编辑 <code>redis/conf/redis.conf</code> 文件，确保包含并根据需要修改上述配置项。</p>
+<h3 id="4-运行-Redis-容器"><a href="#4-运行-Redis-容器" class="headerlink" title="4. 运行 Redis 容器"></a>4. 运行 Redis 容器</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">docker run -d \</span><br><span class="line">  --name redis \</span><br><span class="line">  -p 6379:6379 \</span><br><span class="line">  -v $(pwd)/redis/conf/redis.conf:/usr/local/etc/redis/redis.conf \</span><br><span class="line">  -v $(pwd)/redis/data:/data \</span><br><span class="line">  --network syr \</span><br><span class="line">  redis redis-server /usr/local/etc/redis/redis.conf</span><br></pre></td></tr></table></figure>
 
-<p>更多信息请参考：<a target="_blank" rel="noopener" href="https://hexo.io/docs/one-command-deployment.html">部署</a></p>
+<p>此命令将会：</p>
+<ul>
+<li>启动一个名为 <code>redis</code> 的容器。</li>
+<li>将主机的 6379 端口映射到容器的 6379 端口。</li>
+<li>将主机上的 <code>redis.conf</code> 文件挂载到容器中的 <code>/usr/local/etc/redis/redis.conf</code>。</li>
+<li>将主机上的数据目录挂载到容器中的 <code>/data</code>。</li>
+<li>将容器连接到名为 <code>syr</code> 的 Docker 网络。</li>
+<li>使用挂载的 <code>redis.conf</code> 配置文件启动 Redis 服务器。</li>
+</ul>
 
       </section>
 
@@ -159,8 +190,8 @@
     
     <div class="card-text">
       
-        <a href="/2024/07/26/%E5%A6%82%E4%BD%95%E9%83%A8%E7%BD%B2Docker-nacos/" itemprop="url">
-          <h2 class="card-text--title text-ellipsis">如何部署Docker-nacos</h2>
+        <a href="/2024/07/26/%E4%BD%BF%E7%94%A8-Docker-%E9%83%A8%E7%BD%B2-Elasticsearch-7-12-1-%E5%92%8C-Kibana-7-12-1/" itemprop="url">
+          <h2 class="card-text--title text-ellipsis">使用 Docker 部署 Elasticsearch 7.12.1 和 Kibana 7.12.1</h2>
         </a>
       
       <div class="card-text--row">Newer</div>
@@ -174,8 +205,8 @@
     
     <div class="card-text">
       
-        <a href="/2024/07/25/%E5%A6%82%E4%BD%95%E9%83%A8%E7%BD%B2Docker-MySQL/" itemprop="url">
-          <h2 class="card-text--title text-ellipsis">如何部署Docker-MySQL</h2>
+        <a href="/2024/07/26/%E7%94%A8%E4%BA%8E%E6%8E%92%E6%9F%A5%E5%92%8C%E8%A7%A3%E5%86%B3%E7%AB%AF%E5%8F%A3%E5%8D%A0%E7%94%A8%E9%97%AE%E9%A2%98%E4%BB%A5%E5%8F%8A%E7%AE%A1%E7%90%86%E5%92%8C%E7%BB%88%E6%AD%A2%E7%89%B9%E5%AE%9A%E7%9A%84%E8%BF%9B%E7%A8%8B/" itemprop="url">
+          <h2 class="card-text--title text-ellipsis">用于排查和解决端口占用问题以及管理和终止特定的进程</h2>
         </a>
       
       <div class="card-text--row">Older</div>

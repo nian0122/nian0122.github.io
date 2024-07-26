@@ -22,7 +22,7 @@
 
   
 
-  <title>你好！世界 | Hexo</title>
+  <title>Docker常用指令 | Hexo</title>
 
   
 
@@ -99,11 +99,11 @@
     <div class="header-content">
       <div class="post-text layout-block">
         <div class="layout-margin">
-          <h1 class="title-wrap">你好！世界</h1>
+          <h1 class="title-wrap">Docker常用指令</h1>
           <h2 class="title-sub-wrap">
             <strong>Nianer</strong>
             <span>发布于</span>
-            <time  class="article-date" datetime="2024-07-25T02:34:28.645Z" itemprop="datePublished">2024-07-25</time>
+            <time  class="article-date" datetime="2024-07-26T05:58:34.000Z" itemprop="datePublished">2024-07-26</time>
           </h2>
           
           
@@ -111,6 +111,8 @@
   
 </ul>
           <ul class="wrap-list dark">
+  
+    <li><a href="/tags/Docker-%E6%8C%87%E4%BB%A4/">🏷️ -Docker -指令</a></li>
   
 </ul>
         </div>
@@ -134,19 +136,43 @@
       
       
       <section class="article-entry markdown-body layout-margin content-padding--large soft-size--large soft-style--box">
-        <p>欢迎使用 <a target="_blank" rel="noopener" href="https://hexo.io/">Hexo</a>! 这是你的第一篇文章。查阅 <a target="_blank" rel="noopener" href="https://hexo.io/docs/">文档</a> 获取更多信息。如果在使用 Hexo 时遇到问题，可以在 <a target="_blank" rel="noopener" href="https://hexo.io/docs/troubleshooting.html">故障排除</a> 中找到答案，或者在 <a target="_blank" rel="noopener" href="https://github.com/hexojs/hexo/issues">GitHub</a> 上向我提问。</p>
-<h2 id="快速开始"><a href="#快速开始" class="headerlink" title="快速开始"></a>快速开始</h2><h3 id="创建新文章"><a href="#创建新文章" class="headerlink" title="创建新文章"></a>创建新文章</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new &quot;我的新文章&quot;</span><br></pre></td></tr></table></figure>
-
-<p>更多信息请参考：<a target="_blank" rel="noopener" href="https://hexo.io/docs/writing.html">写作</a></p>
-<h3 id="启动服务器"><a href="#启动服务器" class="headerlink" title="启动服务器"></a>启动服务器</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-
-<p>更多信息请参考：<a target="_blank" rel="noopener" href="https://hexo.io/docs/server.html">服务器</a></p>
-<h3 id="生成静态文件"><a href="#生成静态文件" class="headerlink" title="生成静态文件"></a>生成静态文件</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
-
-<p>更多信息请参考：<a target="_blank" rel="noopener" href="https://hexo.io/docs/generating.html">生成</a></p>
-<h3 id="部署到远程站点"><a href="#部署到远程站点" class="headerlink" title="部署到远程站点"></a>部署到远程站点</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-
-<p>更多信息请参考：<a target="_blank" rel="noopener" href="https://hexo.io/docs/one-command-deployment.html">部署</a></p>
+        <h2 id="容器管理"><a href="#容器管理" class="headerlink" title="容器管理"></a>容器管理</h2><ul>
+<li>**<code>docker run [OPTIONS] IMAGE [COMMAND] [ARG...]</code>**：运行一个新的容器。</li>
+<li>**<code>docker ps</code>**：列出当前正在运行的容器。</li>
+<li>**<code>docker ps -a</code>**：列出所有容器，包括停止的容器。</li>
+<li>**<code>docker stop [CONTAINER ID/NAME]</code>**：停止一个正在运行的容器。</li>
+<li>**<code>docker start [CONTAINER ID/NAME]</code>**：启动一个已经停止的容器。</li>
+<li>**<code>docker restart [CONTAINER ID/NAME]</code>**：重启一个容器。</li>
+<li>**<code>docker rm [CONTAINER ID/NAME]</code>**：删除一个已经停止的容器。</li>
+<li>**<code>docker exec -it [CONTAINER ID/NAME] /bin/bash</code>**：进入一个正在运行的容器的终端。</li>
+</ul>
+<h2 id="镜像管理"><a href="#镜像管理" class="headerlink" title="镜像管理"></a>镜像管理</h2><ul>
+<li>**<code>docker images</code>**：列出本地存储的所有镜像。</li>
+<li>**<code>docker pull [IMAGE]</code>**：从 Docker Hub 下载镜像。</li>
+<li>**<code>docker build [OPTIONS] PATH</code>**：从指定的 Dockerfile 构建一个新的镜像。</li>
+<li>**<code>docker rmi [IMAGE ID/NAME]</code>**：删除一个本地镜像。</li>
+<li>**<code>docker tag [SOURCE_IMAGE] [TARGET_IMAGE]</code>**：为镜像打上标签。</li>
+</ul>
+<h2 id="网络管理"><a href="#网络管理" class="headerlink" title="网络管理"></a>网络管理</h2><ul>
+<li>**<code>docker network ls</code>**：列出 Docker 网络。</li>
+<li>**<code>docker network create [NETWORK NAME]</code>**：创建一个新的 Docker 网络。</li>
+<li>**<code>docker network rm [NETWORK NAME]</code>**：删除一个 Docker 网络。</li>
+<li>**<code>docker network connect [NETWORK NAME] [CONTAINER ID/NAME]</code>**：将容器连接到指定网络。</li>
+<li>**<code>docker network disconnect [NETWORK NAME] [CONTAINER ID/NAME]</code>**：将容器从指定网络断开。</li>
+</ul>
+<h2 id="数据卷管理"><a href="#数据卷管理" class="headerlink" title="数据卷管理"></a>数据卷管理</h2><ul>
+<li>**<code>docker volume ls</code>**：列出所有 Docker 数据卷。</li>
+<li>**<code>docker volume create [VOLUME NAME]</code>**：创建一个新的数据卷。</li>
+<li>**<code>docker volume rm [VOLUME NAME]</code>**：删除一个数据卷。</li>
+<li>**<code>docker run -v [VOLUME NAME]:[CONTAINER PATH] ...</code>**：在容器中挂载一个数据卷。</li>
+</ul>
+<h2 id="Docker-Compose"><a href="#Docker-Compose" class="headerlink" title="Docker Compose"></a>Docker Compose</h2><ul>
+<li>**<code>docker-compose up</code>**：启动并运行 <code>docker-compose.yml</code> 文件中定义的所有服务。</li>
+<li>**<code>docker-compose down</code>**：停止并删除 <code>docker-compose.yml</code> 文件中定义的所有服务。</li>
+<li>**<code>docker-compose ps</code>**：列出由 <code>docker-compose</code> 启动的容器。</li>
+<li>**<code>docker-compose build</code>**：构建或重建服务。</li>
+<li>**<code>docker-compose logs</code>**：查看服务的日志输出。</li>
+</ul>
 
       </section>
 
@@ -159,8 +185,8 @@
     
     <div class="card-text">
       
-        <a href="/2024/07/26/%E5%A6%82%E4%BD%95%E9%83%A8%E7%BD%B2Docker-nacos/" itemprop="url">
-          <h2 class="card-text--title text-ellipsis">如何部署Docker-nacos</h2>
+        <a href="/2024/07/26/%E7%94%A8%E4%BA%8E%E6%8E%92%E6%9F%A5%E5%92%8C%E8%A7%A3%E5%86%B3%E7%AB%AF%E5%8F%A3%E5%8D%A0%E7%94%A8%E9%97%AE%E9%A2%98%E4%BB%A5%E5%8F%8A%E7%AE%A1%E7%90%86%E5%92%8C%E7%BB%88%E6%AD%A2%E7%89%B9%E5%AE%9A%E7%9A%84%E8%BF%9B%E7%A8%8B/" itemprop="url">
+          <h2 class="card-text--title text-ellipsis">用于排查和解决端口占用问题以及管理和终止特定的进程</h2>
         </a>
       
       <div class="card-text--row">Newer</div>
@@ -174,8 +200,8 @@
     
     <div class="card-text">
       
-        <a href="/2024/07/25/%E5%A6%82%E4%BD%95%E9%83%A8%E7%BD%B2Docker-MySQL/" itemprop="url">
-          <h2 class="card-text--title text-ellipsis">如何部署Docker-MySQL</h2>
+        <a href="/2024/07/26/%E5%A6%82%E4%BD%95%E9%83%A8%E7%BD%B2Docker-nacos/" itemprop="url">
+          <h2 class="card-text--title text-ellipsis">如何部署Docker-nacos</h2>
         </a>
       
       <div class="card-text--row">Older</div>

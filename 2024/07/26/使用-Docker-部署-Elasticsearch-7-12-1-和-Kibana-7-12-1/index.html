@@ -22,7 +22,7 @@
 
   
 
-  <title>你好！世界 | Hexo</title>
+  <title>使用 Docker 部署 Elasticsearch 7.12.1 和 Kibana 7.12.1 | Hexo</title>
 
   
 
@@ -99,11 +99,11 @@
     <div class="header-content">
       <div class="post-text layout-block">
         <div class="layout-margin">
-          <h1 class="title-wrap">你好！世界</h1>
+          <h1 class="title-wrap">使用 Docker 部署 Elasticsearch 7.12.1 和 Kibana 7.12.1</h1>
           <h2 class="title-sub-wrap">
             <strong>Nianer</strong>
             <span>发布于</span>
-            <time  class="article-date" datetime="2024-07-25T02:34:28.645Z" itemprop="datePublished">2024-07-25</time>
+            <time  class="article-date" datetime="2024-07-26T06:31:48.000Z" itemprop="datePublished">2024-07-26</time>
           </h2>
           
           
@@ -111,6 +111,8 @@
   
 </ul>
           <ul class="wrap-list dark">
+  
+    <li><a href="/tags/%E9%83%A8%E7%BD%B2-Docker-Elasticsearch-Kibana/">🏷️ -部署 -Docker -Elasticsearch -Kibana</a></li>
   
 </ul>
         </div>
@@ -134,19 +136,72 @@
       
       
       <section class="article-entry markdown-body layout-margin content-padding--large soft-size--large soft-style--box">
-        <p>欢迎使用 <a target="_blank" rel="noopener" href="https://hexo.io/">Hexo</a>! 这是你的第一篇文章。查阅 <a target="_blank" rel="noopener" href="https://hexo.io/docs/">文档</a> 获取更多信息。如果在使用 Hexo 时遇到问题，可以在 <a target="_blank" rel="noopener" href="https://hexo.io/docs/troubleshooting.html">故障排除</a> 中找到答案，或者在 <a target="_blank" rel="noopener" href="https://github.com/hexojs/hexo/issues">GitHub</a> 上向我提问。</p>
-<h2 id="快速开始"><a href="#快速开始" class="headerlink" title="快速开始"></a>快速开始</h2><h3 id="创建新文章"><a href="#创建新文章" class="headerlink" title="创建新文章"></a>创建新文章</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new &quot;我的新文章&quot;</span><br></pre></td></tr></table></figure>
+        <p>在本教程中，我们将介绍如何使用 Docker 部署 Elasticsearch 7.12.1 和 Kibana 7.12.1，并将它们连接在一起。通过这些步骤，您将能够快速启动并运行一个完整的 Elasticsearch 和 Kibana 环境。</p>
+<h2 id="前提条件"><a href="#前提条件" class="headerlink" title="前提条件"></a>前提条件</h2><p>在开始之前，请确保您的系统已安装以下软件：</p>
+<ul>
+<li>Docker</li>
+<li>Docker Compose</li>
+</ul>
+<h2 id="创建-Docker-网络"><a href="#创建-Docker-网络" class="headerlink" title="创建 Docker 网络"></a>创建 Docker 网络</h2><p>首先，我们需要创建一个自定义的 Docker 网络，使 Elasticsearch 和 Kibana 可以在同一网络内通信。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker network create hm-net</span><br></pre></td></tr></table></figure>
 
-<p>更多信息请参考：<a target="_blank" rel="noopener" href="https://hexo.io/docs/writing.html">写作</a></p>
-<h3 id="启动服务器"><a href="#启动服务器" class="headerlink" title="启动服务器"></a>启动服务器</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
+<h2 id="部署-Elasticsearch"><a href="#部署-Elasticsearch" class="headerlink" title="部署 Elasticsearch"></a>部署 Elasticsearch</h2><p>接下来，我们将部署一个 Elasticsearch 实例。使用以下命令启动 Elasticsearch 容器：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">docker run -d \</span><br><span class="line">  --name es \</span><br><span class="line">  -e &quot;ES_JAVA_OPTS=-Xms512m -Xmx512m&quot; \</span><br><span class="line">  -e &quot;discovery.type=single-node&quot; \</span><br><span class="line">  -v $(pwd)/elasticsearch/data:/usr/share/elasticsearch/data \</span><br><span class="line">  -v es-plugins:/usr/share/elasticsearch/plugins \</span><br><span class="line">  --privileged \</span><br><span class="line">  --network hm-net \</span><br><span class="line">  -p 9200:9200 \</span><br><span class="line">  -p 9300:9300 \</span><br><span class="line">  elasticsearch:7.12.1</span><br></pre></td></tr></table></figure>
 
-<p>更多信息请参考：<a target="_blank" rel="noopener" href="https://hexo.io/docs/server.html">服务器</a></p>
-<h3 id="生成静态文件"><a href="#生成静态文件" class="headerlink" title="生成静态文件"></a>生成静态文件</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
+<p>此命令将会：</p>
+<ul>
+<li>启动一个名为 <code>es</code> 的 Elasticsearch 容器。</li>
+<li>设置 Java 堆内存大小为 512MB。</li>
+<li>配置 Elasticsearch 以单节点模式运行。</li>
+<li>将主机上的 <code>elasticsearch/data</code> 目录挂载到容器中的 <code>/usr/share/elasticsearch/data</code>。</li>
+<li>将名为 <code>es-plugins</code> 的 Docker 卷挂载到容器中的 <code>/usr/share/elasticsearch/plugins</code>。</li>
+<li>启用特权模式运行容器。</li>
+<li>将容器连接到 <code>hm-net</code> 网络。</li>
+<li>将主机的 9200 端口映射到容器的 9200 端口。</li>
+<li>将主机的 9300 端口映射到容器的 9300 端口。</li>
+</ul>
+<h2 id="部署-Kibana"><a href="#部署-Kibana" class="headerlink" title="部署 Kibana"></a>部署 Kibana</h2><p>现在，我们可以部署 Kibana 并连接到我们刚刚启动的 Elasticsearch 实例。使用以下命令启动 Kibana：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">docker run -d \</span><br><span class="line">  --name kibana \</span><br><span class="line">  -e ELASTICSEARCH_HOSTS=http://es:9200 \</span><br><span class="line">  --network=hm-net \</span><br><span class="line">  -p 5601:5601 \</span><br><span class="line">  kibana:7.12.1</span><br></pre></td></tr></table></figure>
 
-<p>更多信息请参考：<a target="_blank" rel="noopener" href="https://hexo.io/docs/generating.html">生成</a></p>
-<h3 id="部署到远程站点"><a href="#部署到远程站点" class="headerlink" title="部署到远程站点"></a>部署到远程站点</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
+<p>此命令将会：</p>
+<ul>
+<li>启动一个名为 <code>kibana</code> 的 Kibana 容器。</li>
+<li>设置 Kibana 连接到 Elasticsearch 实例（位于 <code>http://es:9200</code>）。</li>
+<li>将容器连接到 <code>hm-net</code> 网络。</li>
+<li>将主机的 5601 端口映射到容器的 5601 端口。</li>
+</ul>
+<h2 id="验证部署"><a href="#验证部署" class="headerlink" title="验证部署"></a>验证部署</h2><p>部署完成后，您可以通过访问 <code>http://localhost:5601</code> 来验证 Kibana 是否成功启动。如果一切正常，您应该会看到 Kibana 的欢迎页面。</p>
+<h2 id="详细解释"><a href="#详细解释" class="headerlink" title="详细解释"></a>详细解释</h2><h3 id="创建自定义-Docker-网络"><a href="#创建自定义-Docker-网络" class="headerlink" title="创建自定义 Docker 网络"></a>创建自定义 Docker 网络</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker network create hm-net</span><br></pre></td></tr></table></figure>
 
-<p>更多信息请参考：<a target="_blank" rel="noopener" href="https://hexo.io/docs/one-command-deployment.html">部署</a></p>
+<p>这条命令创建了一个名为 <code>hm-net</code> 的 Docker 网络，使得 Elasticsearch 和 Kibana 可以在同一网络内进行通信。</p>
+<h3 id="部署-Elasticsearch-1"><a href="#部署-Elasticsearch-1" class="headerlink" title="部署 Elasticsearch"></a>部署 Elasticsearch</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">docker run -d \</span><br><span class="line">  --name es \</span><br><span class="line">  -e &quot;ES_JAVA_OPTS=-Xms512m -Xmx512m&quot; \</span><br><span class="line">  -e &quot;discovery.type=single-node&quot; \</span><br><span class="line">  -v $(pwd)/elasticsearch/data:/usr/share/elasticsearch/data \</span><br><span class="line">  -v es-plugins:/usr/share/elasticsearch/plugins \</span><br><span class="line">  --privileged \</span><br><span class="line">  --network hm-net \</span><br><span class="line">  -p 9200:9200 \</span><br><span class="line">  -p 9300:9300 \</span><br><span class="line">  elasticsearch:7.12.1</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><code>-d</code>：以分离模式（后台运行）启动容器。</li>
+<li><code>--name es</code>：指定容器名称为 <code>es</code>。</li>
+<li><code>-e &quot;ES_JAVA_OPTS=-Xms512m -Xmx512m&quot;</code>：设置 Java 堆内存大小为 512MB。</li>
+<li><code>-e &quot;discovery.type=single-node&quot;</code>：设置 Elasticsearch 为单节点模式。</li>
+<li><code>-v $(pwd)/elasticsearch/data:/usr/share/elasticsearch/data</code>：将主机上的 <code>elasticsearch/data</code> 目录挂载到容器中的 <code>/usr/share/elasticsearch/data</code>。</li>
+<li><code>-v es-plugins:/usr/share/elasticsearch/plugins</code>：将名为 <code>es-plugins</code> 的 Docker 卷挂载到容器中的 <code>/usr/share/elasticsearch/plugins</code>。</li>
+<li><code>--privileged</code>：启用特权模式运行容器。</li>
+<li><code>--network hm-net</code>：将容器连接到 <code>hm-net</code> 网络。</li>
+<li><code>-p 9200:9200</code>：将主机的 9200 端口映射到容器的 9200 端口。</li>
+<li><code>-p 9300:9300</code>：将主机的 9300 端口映射到容器的 9300 端口。</li>
+<li><code>elasticsearch:7.12.1</code>：指定使用 Elasticsearch 7.12.1 镜像。</li>
+</ul>
+<h3 id="部署-Kibana-1"><a href="#部署-Kibana-1" class="headerlink" title="部署 Kibana"></a>部署 Kibana</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">docker run -d \</span><br><span class="line">  --name kibana \</span><br><span class="line">  -e ELASTICSEARCH_HOSTS=http://es:9200 \</span><br><span class="line">  --network=hm-net \</span><br><span class="line">  -p 5601:5601 \</span><br><span class="line">  kibana:7.12.1</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><code>-d</code>：以分离模式（后台运行）启动容器。</li>
+<li><code>--name kibana</code>：指定容器名称为 <code>kibana</code>。</li>
+<li><code>-e ELASTICSEARCH_HOSTS=http://es:9200</code>：设置环境变量，使 Kibana 连接到 Elasticsearch 实例。</li>
+<li><code>--network=hm-net</code>：将容器连接到 <code>hm-net</code> 网络。</li>
+<li><code>-p 5601:5601</code>：将主机的 5601 端口映射到容器的 5601 端口。</li>
+<li><code>kibana:7.12.1</code>：指定使用 Kibana 7.12.1 镜像。</li>
+</ul>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>通过以上步骤，我们成功使用 Docker 部署了 Elasticsearch 7.12.1 和 Kibana 7.12.1，并将它们连接在一起。现在，您可以通过 Kibana 来探索和可视化 Elasticsearch 中的数据。</p>
+<p>如果遇到任何问题，请检查容器的日志以获取更多调试信息：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">docker logs es</span><br><span class="line">docker logs kibana</span><br></pre></td></tr></table></figure>
 
       </section>
 
@@ -154,28 +209,14 @@
       
         <nav class="article-nav">
           
-            <div class="article-nav-item layout-padding">
-  <article class="card-container article-nav-card content-padding--primary soft-size--large soft-style--box">
-    
-    <div class="card-text">
-      
-        <a href="/2024/07/26/%E5%A6%82%E4%BD%95%E9%83%A8%E7%BD%B2Docker-nacos/" itemprop="url">
-          <h2 class="card-text--title text-ellipsis">如何部署Docker-nacos</h2>
-        </a>
-      
-      <div class="card-text--row">Newer</div>
-    </div>
-  </article>
-</div>
-          
           
             <div class="article-nav-item layout-padding">
   <article class="card-container article-nav-card content-padding--primary soft-size--large soft-style--box">
     
     <div class="card-text">
       
-        <a href="/2024/07/25/%E5%A6%82%E4%BD%95%E9%83%A8%E7%BD%B2Docker-MySQL/" itemprop="url">
-          <h2 class="card-text--title text-ellipsis">如何部署Docker-MySQL</h2>
+        <a href="/2024/07/26/%E5%A6%82%E4%BD%95%E9%83%A8%E7%BD%B2Docker-redis/" itemprop="url">
+          <h2 class="card-text--title text-ellipsis">如何部署Docker-redis</h2>
         </a>
       
       <div class="card-text--row">Older</div>

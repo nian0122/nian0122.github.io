@@ -22,7 +22,7 @@
 
   
 
-  <title>你好！世界 | Hexo</title>
+  <title>用于排查和解决端口占用问题以及管理和终止特定的进程 | Hexo</title>
 
   
 
@@ -99,11 +99,11 @@
     <div class="header-content">
       <div class="post-text layout-block">
         <div class="layout-margin">
-          <h1 class="title-wrap">你好！世界</h1>
+          <h1 class="title-wrap">用于排查和解决端口占用问题以及管理和终止特定的进程</h1>
           <h2 class="title-sub-wrap">
             <strong>Nianer</strong>
             <span>发布于</span>
-            <time  class="article-date" datetime="2024-07-25T02:34:28.645Z" itemprop="datePublished">2024-07-25</time>
+            <time  class="article-date" datetime="2024-07-26T06:01:44.000Z" itemprop="datePublished">2024-07-26</time>
           </h2>
           
           
@@ -111,6 +111,8 @@
   
 </ul>
           <ul class="wrap-list dark">
+  
+    <li><a href="/tags/%E6%8C%87%E4%BB%A4/">🏷️ -指令</a></li>
   
 </ul>
         </div>
@@ -134,19 +136,38 @@
       
       
       <section class="article-entry markdown-body layout-margin content-padding--large soft-size--large soft-style--box">
-        <p>欢迎使用 <a target="_blank" rel="noopener" href="https://hexo.io/">Hexo</a>! 这是你的第一篇文章。查阅 <a target="_blank" rel="noopener" href="https://hexo.io/docs/">文档</a> 获取更多信息。如果在使用 Hexo 时遇到问题，可以在 <a target="_blank" rel="noopener" href="https://hexo.io/docs/troubleshooting.html">故障排除</a> 中找到答案，或者在 <a target="_blank" rel="noopener" href="https://github.com/hexojs/hexo/issues">GitHub</a> 上向我提问。</p>
-<h2 id="快速开始"><a href="#快速开始" class="headerlink" title="快速开始"></a>快速开始</h2><h3 id="创建新文章"><a href="#创建新文章" class="headerlink" title="创建新文章"></a>创建新文章</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new &quot;我的新文章&quot;</span><br></pre></td></tr></table></figure>
+        <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">netstat -ano | findstr 8080</span><br><span class="line">tasklist | findstr &quot;5768&quot;</span><br><span class="line">taskkill  /f  /t  /im javaw.exe</span><br></pre></td></tr></table></figure>
 
-<p>更多信息请参考：<a target="_blank" rel="noopener" href="https://hexo.io/docs/writing.html">写作</a></p>
-<h3 id="启动服务器"><a href="#启动服务器" class="headerlink" title="启动服务器"></a>启动服务器</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-
-<p>更多信息请参考：<a target="_blank" rel="noopener" href="https://hexo.io/docs/server.html">服务器</a></p>
-<h3 id="生成静态文件"><a href="#生成静态文件" class="headerlink" title="生成静态文件"></a>生成静态文件</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
-
-<p>更多信息请参考：<a target="_blank" rel="noopener" href="https://hexo.io/docs/generating.html">生成</a></p>
-<h3 id="部署到远程站点"><a href="#部署到远程站点" class="headerlink" title="部署到远程站点"></a>部署到远程站点</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-
-<p>更多信息请参考：<a target="_blank" rel="noopener" href="https://hexo.io/docs/one-command-deployment.html">部署</a></p>
+<h2 id="命令详解"><a href="#命令详解" class="headerlink" title="命令详解"></a>命令详解</h2><h3 id="1-netstat-ano-findstr-8080"><a href="#1-netstat-ano-findstr-8080" class="headerlink" title="1. netstat -ano | findstr 8080"></a>1. <code>netstat -ano | findstr 8080</code></h3><p>**<code>netstat -ano</code>**：列出当前所有的网络连接及其状态，包括以下信息：</p>
+<ul>
+<li>协议类型（TCP&#x2F;UDP）</li>
+<li>源地址和端口</li>
+<li>目标地址和端口</li>
+<li>连接状态（如 ESTABLISHED、LISTENING 等）</li>
+<li>对应的进程 ID (PID)</li>
+</ul>
+<p>**<code>| findstr 8080</code>**：使用 <code>findstr</code> 命令筛选出包含 “8080” 的行。这通常用于查找占用特定端口（如 8080）的进程，以确定哪个进程在使用该端口。</p>
+<h3 id="2-tasklist-findstr-5768"><a href="#2-tasklist-findstr-5768" class="headerlink" title="2. tasklist | findstr &quot;5768&quot;"></a>2. <code>tasklist | findstr &quot;5768&quot;</code></h3><p>**<code>tasklist</code>**：列出当前系统中所有运行的进程及其基本信息，包括：</p>
+<ul>
+<li>进程名称</li>
+<li>进程 ID (PID)</li>
+<li>会话名称</li>
+<li>会话编号</li>
+<li>内存使用情况</li>
+</ul>
+<p>**<code>| findstr &quot;5768&quot;</code>**：使用 <code>findstr</code> 命令筛选出包含 “5768” 的行，这里通常是查找进程 ID 为 5768 的进程，以确定该 PID 对应的进程名称及其他信息。</p>
+<h3 id="3-taskkill-f-t-im-javaw-exe"><a href="#3-taskkill-f-t-im-javaw-exe" class="headerlink" title="3. taskkill /f /t /im javaw.exe"></a>3. <code>taskkill /f /t /im javaw.exe</code></h3><p>**<code>taskkill</code>**：用于终止一个或多个进程。</p>
+<ul>
+<li>**<code>/f</code>**：强制终止进程，即使进程未响应。</li>
+<li>**<code>/t</code>**：终止指定进程及其子进程。</li>
+<li>**<code>/im javaw.exe</code>**：按进程名称（这里是 <code>javaw.exe</code>）指定要终止的进程。</li>
+</ul>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这些命令可以帮助你管理和控制系统中的网络连接和进程：</p>
+<ul>
+<li>使用 <code>netstat -ano | findstr 8080</code> 找出哪个进程占用了特定端口。</li>
+<li>使用 <code>tasklist | findstr &quot;5768&quot;</code> 查找指定 PID 对应的进程信息。</li>
+<li>使用 <code>taskkill /f /t /im javaw.exe</code> 强制终止指定名称的进程及其子进程。</li>
+</ul>
 
       </section>
 
@@ -159,8 +180,8 @@
     
     <div class="card-text">
       
-        <a href="/2024/07/26/%E5%A6%82%E4%BD%95%E9%83%A8%E7%BD%B2Docker-nacos/" itemprop="url">
-          <h2 class="card-text--title text-ellipsis">如何部署Docker-nacos</h2>
+        <a href="/2024/07/26/%E5%A6%82%E4%BD%95%E9%83%A8%E7%BD%B2Docker-redis/" itemprop="url">
+          <h2 class="card-text--title text-ellipsis">如何部署Docker-redis</h2>
         </a>
       
       <div class="card-text--row">Newer</div>
@@ -174,8 +195,8 @@
     
     <div class="card-text">
       
-        <a href="/2024/07/25/%E5%A6%82%E4%BD%95%E9%83%A8%E7%BD%B2Docker-MySQL/" itemprop="url">
-          <h2 class="card-text--title text-ellipsis">如何部署Docker-MySQL</h2>
+        <a href="/2024/07/26/Docker%E5%B8%B8%E7%94%A8%E6%8C%87%E4%BB%A4/" itemprop="url">
+          <h2 class="card-text--title text-ellipsis">Docker常用指令</h2>
         </a>
       
       <div class="card-text--row">Older</div>

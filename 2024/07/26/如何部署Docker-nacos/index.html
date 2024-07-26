@@ -22,7 +22,7 @@
 
   
 
-  <title>你好！世界 | Hexo</title>
+  <title>如何部署Docker-nacos | Hexo</title>
 
   
 
@@ -99,11 +99,11 @@
     <div class="header-content">
       <div class="post-text layout-block">
         <div class="layout-margin">
-          <h1 class="title-wrap">你好！世界</h1>
+          <h1 class="title-wrap">如何部署Docker-nacos</h1>
           <h2 class="title-sub-wrap">
             <strong>Nianer</strong>
             <span>发布于</span>
-            <time  class="article-date" datetime="2024-07-25T02:34:28.645Z" itemprop="datePublished">2024-07-25</time>
+            <time  class="article-date" datetime="2024-07-26T05:50:46.000Z" itemprop="datePublished">2024-07-26</time>
           </h2>
           
           
@@ -111,6 +111,12 @@
   
 </ul>
           <ul class="wrap-list dark">
+  
+    <li><a href="/tags/%E9%83%A8%E7%BD%B2/">🏷️ 部署</a></li>
+  
+    <li><a href="/tags/Docker/">🏷️ Docker</a></li>
+  
+    <li><a href="/tags/nacos/">🏷️ nacos</a></li>
   
 </ul>
         </div>
@@ -134,19 +140,17 @@
       
       
       <section class="article-entry markdown-body layout-margin content-padding--large soft-size--large soft-style--box">
-        <p>欢迎使用 <a target="_blank" rel="noopener" href="https://hexo.io/">Hexo</a>! 这是你的第一篇文章。查阅 <a target="_blank" rel="noopener" href="https://hexo.io/docs/">文档</a> 获取更多信息。如果在使用 Hexo 时遇到问题，可以在 <a target="_blank" rel="noopener" href="https://hexo.io/docs/troubleshooting.html">故障排除</a> 中找到答案，或者在 <a target="_blank" rel="noopener" href="https://github.com/hexojs/hexo/issues">GitHub</a> 上向我提问。</p>
-<h2 id="快速开始"><a href="#快速开始" class="headerlink" title="快速开始"></a>快速开始</h2><h3 id="创建新文章"><a href="#创建新文章" class="headerlink" title="创建新文章"></a>创建新文章</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new &quot;我的新文章&quot;</span><br></pre></td></tr></table></figure>
+        <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">docker run -d \</span><br><span class="line">--name nacos \</span><br><span class="line">--env-file ./nacos/custom.env \</span><br><span class="line">-p 8848:8848 \</span><br><span class="line">-p 9848:9848 \</span><br><span class="line">-p 9849:9849 \</span><br><span class="line">--restart=always \</span><br><span class="line">nacos/nacos-server:v2.1.0-slim</span><br></pre></td></tr></table></figure>
 
-<p>更多信息请参考：<a target="_blank" rel="noopener" href="https://hexo.io/docs/writing.html">写作</a></p>
-<h3 id="启动服务器"><a href="#启动服务器" class="headerlink" title="启动服务器"></a>启动服务器</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-
-<p>更多信息请参考：<a target="_blank" rel="noopener" href="https://hexo.io/docs/server.html">服务器</a></p>
-<h3 id="生成静态文件"><a href="#生成静态文件" class="headerlink" title="生成静态文件"></a>生成静态文件</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
-
-<p>更多信息请参考：<a target="_blank" rel="noopener" href="https://hexo.io/docs/generating.html">生成</a></p>
-<h3 id="部署到远程站点"><a href="#部署到远程站点" class="headerlink" title="部署到远程站点"></a>部署到远程站点</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-
-<p>更多信息请参考：<a target="_blank" rel="noopener" href="https://hexo.io/docs/one-command-deployment.html">部署</a></p>
+<h2 id="详细解释"><a href="#详细解释" class="headerlink" title="详细解释"></a>详细解释</h2><h3 id="1-分离模式"><a href="#1-分离模式" class="headerlink" title="1. 分离模式"></a>1. 分离模式</h3><p>**<code>docker run -d</code>**：以分离模式（detached mode）启动一个新的容器，使容器在后台运行。</p>
+<h3 id="2-容器命名"><a href="#2-容器命名" class="headerlink" title="2. 容器命名"></a>2. 容器命名</h3><p>**<code>--name nacos</code>**：为容器指定名称为 <code>nacos</code>，方便管理和访问这个容器。</p>
+<h3 id="3-加载环境变量文件"><a href="#3-加载环境变量文件" class="headerlink" title="3. 加载环境变量文件"></a>3. 加载环境变量文件</h3><p>**<code>--env-file ./nacos/custom.env</code>**：从指定的环境变量文件 <code>custom.env</code> 加载环境变量。文件路径是相对于当前运行命令的目录。</p>
+<h3 id="4-端口映射"><a href="#4-端口映射" class="headerlink" title="4. 端口映射"></a>4. 端口映射</h3><p>**<code>-p 8848:8848</code>**：将主机的 8848 端口映射到容器的 8848 端口，这是 Nacos 服务的默认端口。</p>
+<p>**<code>-p 9848:9848</code>**：将主机的 9848 端口映射到容器的 9848 端口，通常用于 gRPC 服务。</p>
+<p>**<code>-p 9849:9849</code>**：将主机的 9849 端口映射到容器的 9849 端口，通常用于 Raft 协议。</p>
+<h3 id="5-重启策略"><a href="#5-重启策略" class="headerlink" title="5. 重启策略"></a>5. 重启策略</h3><p>**<code>--restart=always</code>**：配置容器在停止后总是重新启动，以确保服务的高可用性。</p>
+<h3 id="6-指定镜像和版本"><a href="#6-指定镜像和版本" class="headerlink" title="6. 指定镜像和版本"></a>6. 指定镜像和版本</h3><p>**<code>nacos/nacos-server:v2.1.0-slim</code>**：使用 <code>nacos/nacos-server</code> 镜像的 <code>v2.1.0-slim</code> 标签来创建容器。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>以上命令启动了一个 Nacos 服务器容器，配置了环境变量、端口映射和重启策略。容器将从 <code>custom.env</code> 文件加载配置，并使用 <code>nacos/nacos-server:v2.1.0-slim</code> 镜像。这样设置可以确保 Nacos 服务的持续运行和易于管理。</p>
 
       </section>
 
@@ -159,8 +163,8 @@
     
     <div class="card-text">
       
-        <a href="/2024/07/26/%E5%A6%82%E4%BD%95%E9%83%A8%E7%BD%B2Docker-nacos/" itemprop="url">
-          <h2 class="card-text--title text-ellipsis">如何部署Docker-nacos</h2>
+        <a href="/2024/07/26/Docker%E5%B8%B8%E7%94%A8%E6%8C%87%E4%BB%A4/" itemprop="url">
+          <h2 class="card-text--title text-ellipsis">Docker常用指令</h2>
         </a>
       
       <div class="card-text--row">Newer</div>
@@ -174,8 +178,8 @@
     
     <div class="card-text">
       
-        <a href="/2024/07/25/%E5%A6%82%E4%BD%95%E9%83%A8%E7%BD%B2Docker-MySQL/" itemprop="url">
-          <h2 class="card-text--title text-ellipsis">如何部署Docker-MySQL</h2>
+        <a href="/2024/07/25/%E4%BD%A0%E5%A5%BD%EF%BC%81%E4%B8%96%E7%95%8C/" itemprop="url">
+          <h2 class="card-text--title text-ellipsis">你好！世界</h2>
         </a>
       
       <div class="card-text--row">Older</div>
