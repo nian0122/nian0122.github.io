@@ -131,7 +131,7 @@
 <li><code>dir(obj)</code> 列出名称，<code>help(obj)</code> 查看说明，<code>inspect.signature(func)</code> 查看普通 Python 函数的参数。读包时先看文档和最小示例，再沿实际调用找源码。</li>
 <li><code>__file__</code> 是<strong>当前模块</strong>的文件路径。比如查看 <code>django_k8s.__file__</code>，常得到包的 <code>__init__.py</code>。在 settings.py 中，<code>Path(__file__).resolve().parent</code> 是配置文件所在目录，再向上一层是 web。</li>
 <li><code>__dict__</code> 保存许多对象的属性，<code>__init__</code> 在实例创建后初始化它。<code>obj.__bool__</code> 取到方法对象，<code>obj.__bool__()</code> 执行它，通常直接用 <code>bool(obj)</code>。<code>read_dotenv()</code> 返回 None 时，<code>bool(None)</code> 为 False，不能拿这个返回值判断加载是否成功。</li>
-<li>当前教程的 <code>dotenv.read_dotenv(str(ENV_FILE_PATH))</code> 把文件里的键值读进当前进程环境。<code>settings.ENV_FILE_PATH</code> 能读到定义在 Django settings 模块里的同名大写配置。定义在 wsgi.py 的变量属于那个模块。</li>
+<li>教程中的 <code>dotenv.read_dotenv(str(ENV_FILE_PATH))</code> 把文件里的键值读进当前进程环境。<code>settings.ENV_FILE_PATH</code> 能读到定义在 Django settings 模块里的同名大写配置。定义在 wsgi.py 的变量属于那个模块。</li>
 <li><code>SECRET_KEY</code> 用于 Django 的加密签名，例如密码重置令牌和签名后的数据。长期部署应保管原有密钥。</li>
 <li><code>DEBUG=False</code> 关闭调试异常页，需要配置 <code>ALLOWED_HOSTS</code>。本项目从 <code>ENV_ALLOWED_HOST</code> 读取域名。HTTP 400 可以去日志里查 <code>DisallowedHost</code>。域名解析到服务器之后，还要经过端口、Kubernetes Service 和 Django 路由。</li>
 </ul>
@@ -181,9 +181,9 @@ python .\manage.py runserver
 <ol>
 <li>第一轮 Actions 中，登录和构建成功，推送遇到 GHCR 403。配置包级写权限后，重跑已成功推送镜像。</li>
 <li>重跑停在 Update deployment secrets。kubeconfig 里的 server 是 <code>https://127.0.0.1:6443</code>，GitHub Runner 连到的是自己的回环地址，返回 connection refused。后续 rollout 和迁移被跳过。</li>
-<li>我接着验证 K3s API 的公网可达性。服务器的 <code>ss -lntp 'sport = :6443'</code> 显示 K3s 监听 <code>*:6443</code>。Windows 对实际 API 地址（下文用示例域名代替）进行测试， ping 有响应，但 <code>TcpTestSucceeded : False</code>。公网 TCP 尚未通过，证书校验尚未发生。</li>
+<li>我接着验证 K3s API 的公网可达性。服务器的 <code>ss -lntp 'sport = :6443'</code> 显示 K3s 监听 <code>*:6443</code>。Windows 对实际 API 地址（下文用示例域名代替）进行测试，ping 有响应，但 <code>TcpTestSucceeded : False</code>。公网 TCP 尚未通过，证书校验尚未发生。</li>
 <li>下次从服务器抓包开始。运行 <code>tcpdump -ni any 'tcp port 6443'</code>，同时从 Windows 重测。看不到 SYN 时检查绑定的安全组、入站端口和来源公网 IP。收到 SYN 却没有 SYN-ACK 时查服务器防火墙。收到并回应后客户端仍失败时查回程。</li>
-<li>TCP 打通后用 kubeconfig 副本测试 <code>https://k3s.example.com:6443</code>。K3s API 自带 HTTPS。若 x509 明确提示证书不含公网 IP，检查 K3s 的 tls-san 配置。kubectl 验证通过后更新 GitHub Secret，并确认 GitHub Runner 的出口也在入站规则允许范围内。</li>
+<li>TCP 打通后用 kubeconfig 副本测试 <code>https://k3s.example.com:6443</code>。K3s API 自带 HTTPS。若 x509 明确提示证书与 API 地址不匹配，检查 K3s 的 tls-san 配置。kubectl 验证通过后更新 GitHub Secret，并确认 GitHub Runner 的出口也在入站规则允许范围内。</li>
 </ol>
 <p><a href="https://www.youtube.com/watch?v=NAOsLaB6Lfc">教程视频</a></p>
           </section>
