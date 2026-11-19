@@ -22,9 +22,9 @@
 
 
 
-  <meta name="description" content="记录 PostgreSQL 后端、Django Admin 静态文件、GHCR 权限和 K3s API 连接的排查过程。">
+  <meta name="description" content="记录 Django 和 Python 基础、本地运行、Docker Compose、K3s 与 GitHub Actions 的学习过程。">
   <link rel="canonical" href="https://nian0122.github.io/2026/11/19/django-k3s-deployment-notes/">
-  <title>Django 部署排错：从 PostgreSQL 到 GHCR 和 K3s | Hexo</title>
+  <title>Django、Docker、K3s 和 GitHub Actions 学习笔记 | Hexo</title>
 
 
 
@@ -101,7 +101,7 @@
     <div class="header-content">
       <div class="post-text layout-block">
         <div class="layout-margin">
-          <h1 class="title-wrap">Django 部署排错：从 PostgreSQL 到 GHCR 和 K3s</h1>
+          <h1 class="title-wrap">Django、Docker、K3s 和 GitHub Actions 学习笔记</h1>
           <h2 class="title-sub-wrap">
             <strong>Nianer</strong>
             <span>发布于</span>
@@ -123,36 +123,69 @@
       <article class="content-container layout-block post-container">
         <div class="article-info">
           <section class="article-entry markdown-body layout-margin content-padding--large soft-size--large soft-style--box">
-<p>这次练习用 Docker Compose 在本地运行 Django 和 PostgreSQL，再通过 GitHub Actions 构建镜像、推送到 GHCR，并尝试部署到 K3s。镜像最终推送成功，自动部署停在 Runner 连接 Kubernetes API 的阶段。以下记录每一步的故障现象和验证方法。</p>
-<h2 id="postgresql-django-sqlite">PostgreSQL 已经起来，Django 怎么还在用 SQLite？</h2>
-<p>Compose 里的 PostgreSQL 已通过 <code>pg_isready</code>，直接连库也能执行查询。本项目以 SQLite 为默认后端，只有五项 PostgreSQL 连接配置都有值时才会启用 PostgreSQL。此次 Django 进程未能读取数据库密码，因此继续使用 SQLite。在与 Web 进程使用相同配置的 Django shell 里执行下面两行，可以直接确认实际使用的数据库后端。</p>
-<pre><code class="language-python">from django.db import connection
-
-print(connection.vendor)  # postgresql 或 sqlite
+<p>这次我从 Django 项目结构和 Python 配置入手，先在 Windows 上运行项目，再用 Docker Compose 接入 PostgreSQL，最后把构建和发布流程搬进 GitHub Actions。教程使用 DigitalOcean Registry 和托管 Kubernetes，我改用了 GHCR、云服务器上的 K3s 和集群内 PostgreSQL。</p>
+<h2 id="1-django-python">1. Django 与 Python 基础</h2>
+<ul>
+<li>Django 的项目配置集中在 settings.py，urls.py 负责请求路由，视图处理请求，models.py 定义 ORM 模型。可以分别类比 Spring Boot 的应用配置、Controller 路由和实体映射。</li>
+<li>在 web 目录运行 <code>django-admin startproject django_k8s .</code>，会直接在当前目录生成 manage.py，并创建 django_k8s 配置包。最后的点表示当前目录。</li>
+<li><code>dir(obj)</code> 列出名称，<code>help(obj)</code> 查看说明，<code>inspect.signature(func)</code> 查看普通 Python 函数的参数。读包时先看文档和最小示例，再沿实际调用找源码。</li>
+<li><code>__file__</code> 是<strong>当前模块</strong>的文件路径。比如查看 <code>django_k8s.__file__</code>，常得到包的 <code>__init__.py</code>。在 settings.py 中，<code>Path(__file__).resolve().parent</code> 是配置文件所在目录，再向上一层是 web。</li>
+<li><code>__dict__</code> 保存许多对象的属性，<code>__init__</code> 在实例创建后初始化它。<code>obj.__bool__</code> 取到方法对象，<code>obj.__bool__()</code> 执行它，通常直接用 <code>bool(obj)</code>。<code>read_dotenv()</code> 返回 None 时，<code>bool(None)</code> 为 False，不能拿这个返回值判断加载是否成功。</li>
+<li>当前教程的 <code>dotenv.read_dotenv(str(ENV_FILE_PATH))</code> 把文件里的键值读进当前进程环境。<code>settings.ENV_FILE_PATH</code> 能读到定义在 Django settings 模块里的同名大写配置。定义在 wsgi.py 的变量属于那个模块。</li>
+<li><code>SECRET_KEY</code> 用于 Django 的加密签名，例如密码重置令牌和签名后的数据。长期部署应保管原有密钥。</li>
+<li><code>DEBUG=False</code> 关闭调试异常页，需要配置 <code>ALLOWED_HOSTS</code>。本项目从 <code>ENV_ALLOWED_HOST</code> 读取域名。HTTP 400 可以去日志里查 <code>DisallowedHost</code>。域名解析到服务器之后，还要经过端口、Kubernetes Service 和 Django 路由。</li>
+</ul>
+<h2 id="2">2. 本地运行、迁移和静态文件</h2>
+<p>在 web 目录并激活 Windows 虚拟环境后执行：</p>
+<pre><code class="language-powershell">python -m pip install -r .\requirements.txt
+python .\manage.py migrate
+python .\manage.py createsuperuser
+python .\manage.py runserver
 </code></pre>
-<p>管理员登录也需要核对实际使用的数据库。<code>migrate</code> 会更新当前数据库的表结构，管理员账号需要另外创建。在 SQLite 创建的用户不会出现在 PostgreSQL 里。先确认数据库后端，再检查账号是否已启用并具备 Admin 登录所需的 staff 身份。</p>
-<p>Compose 的端口也有两层。以 <code>5434:5432</code> 为例，宿主机通过 5434 访问 PostgreSQL，同一 Compose 网络中的 Django 则通过服务名和容器端口访问，例如 <code>postgres:5432</code>。如果用 <code>-p 5434</code> 修改了 PostgreSQL 自身的监听端口，容器之间的连接配置也要随之修改。</p>
-<h2 id="admin-404">Admin 能打开，样式却全是 404</h2>
-<p>Gunicorn 下登录页能返回 200，但 Admin 的 CSS 和 JavaScript 一开始全是 404。这次在 Django 里设置了 <code>STATIC_ROOT</code>，把 WhiteNoise 中间件放在 <code>SecurityMiddleware</code> 之后，并在启动 Gunicorn 前运行 <code>collectstatic</code>。</p>
-<pre><code class="language-bash">python manage.py collectstatic --noinput
-</code></pre>
-<p><code>collectstatic</code> 把资源汇总到 <code>STATIC_ROOT</code>，WhiteNoise 负责响应静态资源请求。修改后抽查了五个 Admin CSS 和 JavaScript 地址，均返回 200。排查时可以直接请求 <code>/static/admin/css/base.css</code>，把静态资源问题和登录表单问题分开验证。</p>
-<h2 id="push-403">镜像构建成功，为什么 push 还报 403？</h2>
-<p>第一轮构建成功，GHCR 登录也成功，但上传镜像层时返回了 <code>403 Forbidden</code>。工作流的 <code>GITHUB_TOKEN</code> 已有 <code>packages: write</code>，还需要在已有镜像包的 <strong>Package settings → Manage Actions access</strong> 中给工作流所在仓库写权限。调整权限后，重跑成功推送了镜像。</p>
-<h2 id="runner-127001">Runner 上的 127.0.0.1 是谁？</h2>
-<p>镜像推上去后，工作流在更新 Kubernetes Secret 时遇到下一条错误。</p>
-<pre><code class="language-text">dial tcp 127.0.0.1:6443: connect: connection refused
-</code></pre>
-<p>本地 kubeconfig 指向 <code>https://127.0.0.1:6443</code>，因为我的 Windows 机器用 SSH 隧道转发了这个端口。把配置放进 GitHub Actions 的 <code>K3S_KUBECONFIG</code> 后，同一个地址就指向 Runner 自己。Runner 上没有对应隧道，连接随即被拒绝。</p>
-<p>接下来在 Windows 上预检 K3s API 的公网可达性。我在服务器上用 <code>ss -lntp 'sport = :6443'</code> 确认 K3s 正在监听，但 Windows 测试时，ping 有响应，<code>TcpTestSucceeded</code> 仍然是 <code>False</code>。K3s API 自带 HTTPS，这次连接还没走到 TLS 证书验证。</p>
-<p>下一步是用服务器端抓包确认连接请求是否到达，同时在客户端重测端口。将示例域名换成自己的 API 地址。</p>
-<pre><code class="language-bash">sudo tcpdump -ni any 'tcp port 6443'
-</code></pre>
-<pre><code class="language-powershell">Test-NetConnection k3s.example.com -Port 6443
-</code></pre>
-<p>如果抓不到客户端的 SYN，可以先查云安全组、来源 IP 范围和网络路径。如果看到了 SYN，却没有 SYN-ACK，再查本机过滤规则和监听状态。若服务器发出了 SYN-ACK 而客户端仍连接失败，可以继续检查回程路径。TCP 打通后，用实际部署环境的 kubeconfig 验证 API 访问，保留 CA 校验。如果收到明确的证书名称不匹配错误，再检查 K3s 的 <code>tls-san</code> 配置。</p>
-<p>这次实际跑通了本地 Admin 静态资源和 GHCR 镜像推送。自动部署停在连接 K3s API，后面的滚动更新和数据库迁移在这轮 Actions 里还没有执行。</p>
-<p><a href="https://www.youtube.com/watch?v=NAOsLaB6Lfc">参考教程：Django Kubernetes</a></p>
+<ul>
+<li><code>migrate</code> 更新数据库结构。<code>No migrations to apply</code> 表示当前连接的数据库已完成迁移。管理员通过 <code>createsuperuser</code> 或部署里的 migrate.sh 创建。若 Admin 登录失败，检查连接的数据库是否与创建用户时相同，以及账号是否启用并具备 staff 身份。</li>
+<li>进入 Django shell 后执行 <code>from django.db import connection; print(connection.vendor)</code> 可确认后端是 postgresql 还是 sqlite。开发机和容器各有自己的环境变量。这次 PostgreSQL 已通过健康检查，Django 却仍在使用 SQLite。项目要等全部 PostgreSQL 连接配置都有值才会切换后端，所以还需要检查 Django 进程读到的配置。</li>
+<li>Windows 虚拟环境的命令位于 <code>venv\Scripts</code>。容器中的虚拟环境在 <code>/opt/venv</code>，可直接用 <code>/opt/venv/bin/python</code>。dash 里激活脚本用 <code>. /opt/venv/bin/activate</code>，Bash 也支持 <code>source</code>。Gunicorn 在 Linux 容器里运行，应用入口写作 <code>django_k8s.wsgi:application</code>。</li>
+<li><code>ModuleNotFoundError: No module named 'whitenoise'</code> 表示启动进程所用的 Python 环境缺包。<code>collectstatic --noinput</code> 将静态资源复制到 STATIC_ROOT，本项目由 WhiteNoise 提供静态文件。Gunicorn 下曾出现登录页返回 200、Admin 的 CSS 和 JavaScript 返回 404 的情况。配置 STATIC_ROOT 和 WhiteNoise，并在启动前收集静态文件后，抽查的五个资源都返回了 200。<code>No directory at ...\staticfiles</code> 时可以运行 collectstatic。HTTP 304 表示浏览器可继续用缓存。</li>
+<li>Admin 请求中，<code>/admin</code> 常返回 301 补斜线，<code>/admin/</code> 在未登录时返回 302 跳到登录页。登录表单提交返回 200 仍可能是页面重新显示了错误。本会话曾验证域名 HTTP 的 <code>/admin/login/</code> 返回 200，而根路径 <code>/</code> 返回 404。</li>
+<li>PostgreSQL 的 libpq 参数用 <code>sslmode=require</code>。本项目集群内的 PostgreSQL 未启用 TLS 时，可以设 <code>DB_IGNORE_SSL=true</code>。要确认生效，检查运行中的容器和 Django 的实际配置。</li>
+</ul>
+<h2 id="3-docker-compose-ghcr">3. Docker Compose 与 GHCR</h2>
+<ul>
+<li>Compose 的 <code>env_file</code> 把键值注入容器进程。Django 用数据库端口变量连接 PostgreSQL，PostgreSQL 自己的监听端口由它读取的参数或配置决定。</li>
+<li><code>command: -p 5434</code> 让 PostgreSQL 进程监听 5434。<code>expose: [5434]</code> 声明容器端口，不做宿主机发布。<code>ports: ["5434:5434"]</code> 将宿主机 5434 发布到容器 5434。也可以用 <code>"5434:5432"</code> 映射到 PostgreSQL 的默认容器端口。同一个 Compose 网络内的 Django 可以用服务名与容器端口访问数据库。</li>
+<li>服务引用 <code>staticfiles</code> 命名卷时，在 Compose 顶层 volumes 声明它。<code>version</code> 过时的提示可以独立处理。</li>
+<li>PostgreSQL 18 官方镜像建议把持久卷挂到 <code>/var/lib/postgresql</code>。已有旧版数据目录时先确认版本并安排数据迁移，改挂载路径本身不会升级数据库格式。</li>
+<li>Docker 构建的最后一个参数是上下文。从 web 目录使用 <code>docker build -f Dockerfile -t ghcr.io/nian0122/django-k8s-web:v1 .</code>。PowerShell 多行用反引号续行，Bash 才用反斜线。Dockerfile 的 COPY 路径以构建上下文为基准。</li>
+<li>单标签推送写 <code>docker push ghcr.io/nian0122/django-k8s-web:v1</code>，推全部标签时把标签去掉，再加 <code>--all-tags</code>。上传超时可以重试，已上传的镜像层通常会被复用。出现 denied 或 403 时检查凭据和镜像包权限。</li>
+</ul>
+<h2 id="4-k3s">4. K3s 配置和日常排错</h2>
+<ul>
+<li>kubeconfig 包含 API 地址、信任的 CA、认证信息和 context。PowerShell 用 <code>$env:KUBECONFIG = "$HOME\.kube\k3s-remote.yaml"</code> 设置当前进程的配置路径。也可以每次传 <code>--kubeconfig</code>。环境变量为空时，kubectl 默认读取 <code>$HOME\.kube\config</code>。VS Code workspace 里的设置是否进入终端取决于配置项和终端的启动方式。</li>
+<li>Deployment 负责创建和替换 Pod。删除一个 Pod 后，副本控制器会补建。Service 用 selector 匹配 Pod 标签。本项目 Web selector 是 <code>app: django-k8s-web</code>，Service 端口 80 转发到容器 8001。</li>
+<li>如果 LoadBalancer 的 EXTERNAL-IP 一直 pending，检查负载均衡器。在本次排查中，K3s 配置禁用了 servicelb，Service 显示的 NodePort 仍可作为单独的排查入口。</li>
+<li><code>kubectl create secret generic postgres-env --from-env-file=k8s/apps/db.env</code> 在运行命令的电脑上读文件，先核对路径和当前目录。本项目 PostgreSQL 读取 postgres-env，Django 读取 django-k8s-web-prod-env。两边库名和凭据应对应。</li>
+<li>私有镜像用镜像拉取 Secret。本项目 Pod 指定 ghcr-pull，也可以把同命名空间的拉取 Secret 配到 default ServiceAccount，供新建 Pod 使用。Headlamp 的 viewer 服务账号读 Secret 返回 forbidden 属于 RBAC 权限限制。</li>
+<li><code>CreateContainerConfigError</code> 优先看引用的 Secret 或配置是否存在。<code>ErrImagePull</code> 和 <code>ImagePullBackOff</code> 用 <code>kubectl describe pod &lt;pod&gt;</code> 看 Events，区分标签不存在、权限、网络超时和拉取限速。镜像未启动时，kubectl exec 进不去。</li>
+<li><code>ContainerCreating</code> 可能在拉镜像，也可能在等挂载或网络。<code>Terminating</code> 是删除阶段。分别检查 Pod Events、节点和 K3s 日志，避免把所有等待都当成镜像慢。<code>Error</code> 或反复重启时优先看 <code>kubectl logs &lt;pod&gt; --previous</code>。滚动更新中旧 Pod 仍在 Running，不代表新版本已经上线。</li>
+</ul>
+<h2 id="5-github-actions-secrets">5. GitHub Actions 和部署 Secrets</h2>
+<p>手动操作过集群后，我以教程 YAML 为底稿接入自动化。test-django.yml 负责测试，build.yml 串起测试、构建、推送、连接集群、更新 Secret、滚动发布、迁移和静态文件收集。</p>
+<ul>
+<li>测试工作流用 PostgreSQL 服务。Docker 的健康检查写 <code>--health-timeout 5s</code> 和 <code>--health-retries 5</code>。健康检查通过后，测试才能使用 PostgreSQL 服务。</li>
+<li>GHCR 登录使用 GitHub 自动提供的 GITHUB_TOKEN，工作流需要 packages: write。如果已有 GHCR 包未继承仓库权限，还需要在 <strong>Package settings → Manage Actions access</strong> 给仓库写权限。登录成功而 push 返回 403 时，检查包级权限。</li>
+<li>GitHub <strong>Settings → Secrets and variables → Actions</strong> 中配置 K3S_KUBECONFIG、DJANGO_SECRET_KEY、ENV_ALLOWED_HOST、POSTGRES_DB、POSTGRES_USER、POSTGRES_PASSWORD、POSTGRES_HOST、POSTGRES_PORT、DB_IGNORE_SSL。集群内数据库地址用 postgres:5432，站点域名可用 app.example.com 作占位示例。需要自动建立管理员时还可配置 DJANGO_SUPERUSER_USERNAME、DJANGO_SUPERUSER_PASSWORD、DJANGO_SUPERUSER_EMAIL。</li>
+<li>工作流把配置写到临时 .env.prod，再更新 K3s Secret。Pod 启动时读取环境变量，所以部署随后更新镜像。待 rollout 完成后执行迁移和 collectstatic。</li>
+</ul>
+<h2 id="6">6. 本次结束时的状态</h2>
+<ol>
+<li>第一轮 Actions 中，登录和构建成功，推送遇到 GHCR 403。配置包级写权限后，重跑已成功推送镜像。</li>
+<li>重跑停在 Update deployment secrets。kubeconfig 里的 server 是 <code>https://127.0.0.1:6443</code>，GitHub Runner 连到的是自己的回环地址，返回 connection refused。后续 rollout 和迁移被跳过。</li>
+<li>我接着验证 K3s API 的公网可达性。服务器的 <code>ss -lntp 'sport = :6443'</code> 显示 K3s 监听 <code>*:6443</code>。Windows 对实际 API 地址（下文用示例域名代替）进行测试， ping 有响应，但 <code>TcpTestSucceeded : False</code>。公网 TCP 尚未通过，证书校验尚未发生。</li>
+<li>下次从服务器抓包开始。运行 <code>tcpdump -ni any 'tcp port 6443'</code>，同时从 Windows 重测。看不到 SYN 时检查绑定的安全组、入站端口和来源公网 IP。收到 SYN 却没有 SYN-ACK 时查服务器防火墙。收到并回应后客户端仍失败时查回程。</li>
+<li>TCP 打通后用 kubeconfig 副本测试 <code>https://k3s.example.com:6443</code>。K3s API 自带 HTTPS。若 x509 明确提示证书不含公网 IP，检查 K3s 的 tls-san 配置。kubectl 验证通过后更新 GitHub Secret，并确认 GitHub Runner 的出口也在入站规则允许范围内。</li>
+</ol>
+<p><a href="https://www.youtube.com/watch?v=NAOsLaB6Lfc">教程视频</a></p>
           </section>
         </div>
       </article>
