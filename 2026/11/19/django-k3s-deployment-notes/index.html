@@ -22,9 +22,9 @@
 
 
 
-  <meta name="description" content="记录 Django 环境变量、PostgreSQL、Admin 静态文件、GHCR 权限和 K3s API 连接的排查过程。">
+  <meta name="description" content="记录 PostgreSQL 后端、Django Admin 静态文件、GHCR 权限和 K3s API 连接的排查过程。">
   <link rel="canonical" href="https://nian0122.github.io/2026/11/19/django-k3s-deployment-notes/">
-  <title>从 REGION 的 NameError 到 K3s 的 6443：一次 Django 部署排错 | Hexo</title>
+  <title>Django 部署排错：从 PostgreSQL 到 GHCR 和 K3s | Hexo</title>
 
 
 
@@ -101,7 +101,7 @@
     <div class="header-content">
       <div class="post-text layout-block">
         <div class="layout-margin">
-          <h1 class="title-wrap">从 REGION 的 NameError 到 K3s 的 6443：一次 Django 部署排错</h1>
+          <h1 class="title-wrap">Django 部署排错：从 PostgreSQL 到 GHCR 和 K3s</h1>
           <h2 class="title-sub-wrap">
             <strong>Nianer</strong>
             <span>发布于</span>
@@ -123,21 +123,14 @@
       <article class="content-container layout-block post-container">
         <div class="article-info">
           <section class="article-entry markdown-body layout-margin content-padding--large soft-size--large soft-style--box">
-<p>我在 Windows 上跟着教程搭了一个 Django 项目，用 Docker Compose 运行 PostgreSQL，再尝试通过 GitHub Actions 把 Web 镜像推到 GHCR，部署到云服务器上的 K3s。起点是 Django shell 里的一条 <code>NameError</code>，最后卡在 Kubernetes API 的 TCP 连接。一路上最容易搞混的是同一个地址、变量名或命令，换个进程执行，看到的环境就变了。</p>
-<h2 id="django">先确认 Django 进程读到了什么</h2>
-<p>在 Django shell 里，我最初写的是 <code>os.environ.get(REGION)</code>。Python 会先把 <code>REGION</code> 当作变量求值，名字未定义时会立即抛出 <code>NameError</code>。传入字符串后，才会真正查询当前进程的环境变量。</p>
-<pre><code class="language-python">import os
-
-print(os.environ.get(&quot;REGION&quot;))
-</code></pre>
-<p>如果结果是 <code>None</code>，下一步是检查启动 Django 的进程是否加载了对应的 dotenv 文件，或者容器是否通过 Compose 的 <code>env_file</code> 收到了这个键。Windows 终端、容器里的 Gunicorn 和 GitHub Runner 各自拥有独立的进程环境。排查密码这类配置时，可以检查键是否存在，避免把值打到日志里。</p>
+<p>这次练习用 Docker Compose 在本地运行 Django 和 PostgreSQL，再通过 GitHub Actions 构建镜像、推送到 GHCR，并尝试部署到 K3s。镜像最终推送成功，自动部署停在 Runner 连接 Kubernetes API 的阶段。以下记录每一步的故障现象和验证方法。</p>
 <h2 id="postgresql-django-sqlite">PostgreSQL 已经起来，Django 怎么还在用 SQLite？</h2>
-<p>Compose 里的 PostgreSQL 已通过 <code>pg_isready</code>，直接连库也能执行查询。但 Django 的配置把密码环境变量的名字写错了，读不到 <code>POSTGRES_PASSWORD</code>，于是走了本项目的 SQLite 回退分支。在与 Web 进程使用相同配置的 Django shell 里执行下面两行，可以直接确认实际使用的数据库后端。</p>
+<p>Compose 里的 PostgreSQL 已通过 <code>pg_isready</code>，直接连库也能执行查询。本项目以 SQLite 为默认后端，只有五项 PostgreSQL 连接配置都有值时才会启用 PostgreSQL。此次 Django 进程未能读取数据库密码，因此继续使用 SQLite。在与 Web 进程使用相同配置的 Django shell 里执行下面两行，可以直接确认实际使用的数据库后端。</p>
 <pre><code class="language-python">from django.db import connection
 
 print(connection.vendor)  # postgresql 或 sqlite
 </code></pre>
-<p>管理员登录也要沿着这条线查。 <code>migrate</code> 会更新当前数据库的表结构，管理员账号需要另外创建。在 SQLite 创建的用户不会出现在 PostgreSQL 里。先确认数据库后端，再检查账号是否具备 <code>is_staff</code> 权限。</p>
+<p>管理员登录也需要核对实际使用的数据库。<code>migrate</code> 会更新当前数据库的表结构，管理员账号需要另外创建。在 SQLite 创建的用户不会出现在 PostgreSQL 里。先确认数据库后端，再检查账号是否已启用并具备 Admin 登录所需的 staff 身份。</p>
 <p>Compose 的端口也有两层。以 <code>5434:5432</code> 为例，宿主机通过 5434 访问 PostgreSQL，同一 Compose 网络中的 Django 则通过服务名和容器端口访问，例如 <code>postgres:5432</code>。如果用 <code>-p 5434</code> 修改了 PostgreSQL 自身的监听端口，容器之间的连接配置也要随之修改。</p>
 <h2 id="admin-404">Admin 能打开，样式却全是 404</h2>
 <p>Gunicorn 下登录页能返回 200，但 Admin 的 CSS 和 JavaScript 一开始全是 404。这次在 Django 里设置了 <code>STATIC_ROOT</code>，把 WhiteNoise 中间件放在 <code>SecurityMiddleware</code> 之后，并在启动 Gunicorn 前运行 <code>collectstatic</code>。</p>
@@ -145,20 +138,19 @@ print(connection.vendor)  # postgresql 或 sqlite
 </code></pre>
 <p><code>collectstatic</code> 把资源汇总到 <code>STATIC_ROOT</code>，WhiteNoise 负责响应静态资源请求。修改后抽查了五个 Admin CSS 和 JavaScript 地址，均返回 200。排查时可以直接请求 <code>/static/admin/css/base.css</code>，把静态资源问题和登录表单问题分开验证。</p>
 <h2 id="push-403">镜像构建成功，为什么 push 还报 403？</h2>
-<p>GitHub Actions 先用 PostgreSQL 服务运行 Django 测试，再构建 Web 镜像并推送到 GHCR。测试服务的健康检查参数要写完整，例如 <code>--health-timeout 5s</code> 和 <code>--health-retries 5</code>。参数写错时，服务容器启动阶段就会失败，测试还没跑起来。</p>
 <p>第一轮构建成功，GHCR 登录也成功，但上传镜像层时返回了 <code>403 Forbidden</code>。工作流的 <code>GITHUB_TOKEN</code> 已有 <code>packages: write</code>，还需要在已有镜像包的 <strong>Package settings → Manage Actions access</strong> 中给工作流所在仓库写权限。调整权限后，重跑成功推送了镜像。</p>
 <h2 id="runner-127001">Runner 上的 127.0.0.1 是谁？</h2>
 <p>镜像推上去后，工作流在更新 Kubernetes Secret 时遇到下一条错误。</p>
 <pre><code class="language-text">dial tcp 127.0.0.1:6443: connect: connection refused
 </code></pre>
 <p>本地 kubeconfig 指向 <code>https://127.0.0.1:6443</code>，因为我的 Windows 机器用 SSH 隧道转发了这个端口。把配置放进 GitHub Actions 的 <code>K3S_KUBECONFIG</code> 后，同一个地址就指向 Runner 自己。Runner 上没有对应隧道，连接随即被拒绝。</p>
-<p>后来尝试让 Runner 连接可从外部访问的 K3s API。我在服务器上用 <code>ss -lntp 'sport = :6443'</code> 确认 K3s 正在监听，但 Windows 测试时，ping 有响应，<code>TcpTestSucceeded</code> 仍然是 <code>False</code>。K3s API 自带 HTTPS，这次连接还没走到 TLS 证书验证。</p>
+<p>接下来在 Windows 上预检 K3s API 的公网可达性。我在服务器上用 <code>ss -lntp 'sport = :6443'</code> 确认 K3s 正在监听，但 Windows 测试时，ping 有响应，<code>TcpTestSucceeded</code> 仍然是 <code>False</code>。K3s API 自带 HTTPS，这次连接还没走到 TLS 证书验证。</p>
 <p>下一步是用服务器端抓包确认连接请求是否到达，同时在客户端重测端口。将示例域名换成自己的 API 地址。</p>
 <pre><code class="language-bash">sudo tcpdump -ni any 'tcp port 6443'
 </code></pre>
 <pre><code class="language-powershell">Test-NetConnection k3s.example.com -Port 6443
 </code></pre>
-<p>如果抓不到客户端的 SYN，可以先查云安全组、来源 IP 范围和网络路径。如果看到了 SYN，却没有 SYN-ACK，再查本机过滤规则和监听状态。TCP 打通后，用实际部署环境的 kubeconfig 验证 API 访问，保留 CA 校验。如果收到明确的证书名称不匹配错误，再检查 K3s 的 <code>tls-san</code> 配置。</p>
+<p>如果抓不到客户端的 SYN，可以先查云安全组、来源 IP 范围和网络路径。如果看到了 SYN，却没有 SYN-ACK，再查本机过滤规则和监听状态。若服务器发出了 SYN-ACK 而客户端仍连接失败，可以继续检查回程路径。TCP 打通后，用实际部署环境的 kubeconfig 验证 API 访问，保留 CA 校验。如果收到明确的证书名称不匹配错误，再检查 K3s 的 <code>tls-san</code> 配置。</p>
 <p>这次实际跑通了本地 Admin 静态资源和 GHCR 镜像推送。自动部署停在连接 K3s API，后面的滚动更新和数据库迁移在这轮 Actions 里还没有执行。</p>
 <p><a href="https://www.youtube.com/watch?v=NAOsLaB6Lfc">参考教程：Django Kubernetes</a></p>
           </section>
