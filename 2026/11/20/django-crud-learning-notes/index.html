@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <meta name="theme-color" content="#3367D6"/>
+  <link rel="apple-touch-icon" href="/icons-192.png">
+  <link rel="manifest" href="/manifest.json">
+
+  <meta name="generator" content="Hexo 7.3.0">
+
+
+
+
+
+
+    <meta name="author" content="Nianer">
+
+
+
+
+
+
+  <meta name="description" content="记录从 Django ORM 和模型迁移到列表、新增、编辑和删除页面的学习过程。">
+  <link rel="canonical" href="https://nian0122.github.io/2026/11/20/django-crud-learning-notes/">
+  <title>Django CRUD 学习笔记：从 ORM 到文章管理页面 | Hexo</title>
+
+
+
+
+    <link rel="shortcut icon" href="/favicon.ico">
+
+
+  <!--mathjax latex数学公式显示支持-->
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/css/style.css">
+
+</head>
+<body>
+  <div class="root-container">
+
+<!-- header container -->
+<header class="header-container post">
+
+    <div class="post-image" style="background-image: url(https://qiniu.sukoshi.xyz/src/images/68686407_p0.jpg)"></div>
+
+
+  <!-- navbar -->
+<nav class="navbar">
+  <div class="navbar-content">
+    <!-- logo -->
+    <div class="navbar-logo">
+      <a href="/">
+
+          Hexo
+
+      </a>
+    </div>
+    <!-- link -->
+    <div class="navbar-link">
+      <div class="navbar-btn">
+        <div></div>
+        <div></div>
+        <div></div>
+      </div>
+      <ul class="navbar-list">
+
+          <li class="navbar-list-item"><a href="/">首页</a></li>
+
+          <li class="navbar-list-item"><a target="_blank" rel="noopener" href="https://www.bilibili.com/">友链</a></li>
+
+          <li class="navbar-list-item"><a target="_blank" rel="noopener" href="https://github.com/nian0122/">关于</a></li>
+
+      </ul>
+    </div>
+  </div>
+</nav>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div class="header-content">
+      <div class="post-text layout-block">
+        <div class="layout-margin">
+          <h1 class="title-wrap">Django CRUD 学习笔记：从 ORM 到文章管理页面</h1>
+          <h2 class="title-sub-wrap">
+            <strong>Nianer</strong>
+            <span>发布于</span>
+            <time  class="article-date" datetime="2026-11-20T03:33:13+00:00" itemprop="datePublished">2026-11-20</time>
+          </h2>
+
+
+        </div>
+      </div>
+    </div>
+
+
+
+
+
+</header>
+
+    <div class="body-container">
+      <article class="content-container layout-block post-container">
+        <div class="article-info">
+          <section class="article-entry markdown-body layout-margin content-padding--large soft-size--large soft-style--box">
+<p>这次我在现有的 Django 项目里新建了一个 <code>articles</code> 应用，练习管理文章。顺序是先迁移数据库，再用 Shell 做一遍增删改查，最后让浏览器发出的请求走同样的流程。这篇接着<a href="/2026/11/19/django-k3s-deployment-notes/">上一篇部署学习笔记</a>，重点回到 Django 应用本身。</p>
+<h2 id="shell">先建表，再在 Shell 验证数据</h2>
+<p><code>django_k8s</code> 项目负责全局配置和入口路由，<code>articles</code> 应用负责文章业务。我用 <code>python manage.py startapp articles</code> 创建应用，在 <code>INSTALLED_APPS</code> 注册 <code>articles.apps.ArticlesConfig</code>，再定义模型。标题用最长 200 字符的 <code>CharField</code>，正文用 <code>TextField</code>，创建时间由 <code>DateTimeField(auto_now_add=True)</code> 填入。Django 自动提供主键，后面的查询和编辑路由都用它定位文章。</p>
+<pre><code class="language-powershell">python manage.py makemigrations articles
+python manage.py migrate
+python manage.py showmigrations articles
+</code></pre>
+<p>看到 <code>[X] 0001_initial</code> 后，我进入 Django Shell 验证模型。练习更新时最直观的一步是先改 Python 对象，再从数据库查一次，观察调用 <code>save()</code> 前后的差异。</p>
+<pre><code class="language-python">from articles.models import Article
+
+draft = Article.objects.create(title=&quot;修改练习&quot;, content=&quot;初稿&quot;)
+draft_id = draft.pk
+draft.content = &quot;修改后的正文&quot;
+
+print(Article.objects.get(pk=draft_id).content)  # 初稿
+draft.save()
+print(Article.objects.get(pk=draft_id).content)  # 修改后的正文
+
+draft.delete()
+print(Article.objects.filter(pk=draft_id).exists())  # False
+</code></pre>
+<p>给对象属性赋值只改变内存里的对象。<code>save()</code> 把变化写入数据库。<code>get()</code> 适合取一条明确的记录，记录不存在时会抛出异常。<code>exists()</code> 适合只检查记录是否还在。</p>
+<h2 id="_1">把查询接到文章列表</h2>
+<p>项目路由用 <code>path("articles/", include("articles.urls"))</code> 匹配前缀，应用路由用空路径接住余下的部分。访问 <code>/articles/</code> 时，Django 调用列表视图。视图把按创建时间倒序排列的查询集交给模板，时间相同时用主键打破平局。</p>
+<pre><code class="language-python">def article_list(request):
+    articles = Article.objects.order_by(&quot;-created_at&quot;, &quot;-pk&quot;)
+    return render(request, &quot;articles/article_list.html&quot;, {&quot;articles&quot;: articles})
+</code></pre>
+<p>模板循环输出标题和正文，用 <code>{% empty %}</code> 处理没有文章的情况。当浏览器里出现 Shell 中创建的三篇文章时，我就能把整条链路对上了：路由找到视图，视图准备数据，模板把它变成 HTML。</p>
+<h2 id="modelform">用 ModelForm 新增文章</h2>
+<p><code>ArticleForm</code> 继承 <code>ModelForm</code>，显式允许编辑 <code>title</code> 和 <code>content</code>。字段类型和长度校验来自模型。访问 <code>/articles/new/</code> 时，GET 显示空表单，POST 绑定用户输入。校验失败会带着输入和错误重新显示表单，成功则保存并重定向到列表。</p>
+<pre><code class="language-python">def article_create(request):
+    if request.method == &quot;POST&quot;:
+        form = ArticleForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect(&quot;article_list&quot;)
+    else:
+        form = ArticleForm()
+
+    return render(request, &quot;articles/article_form.html&quot;, {&quot;form&quot;: form})
+</code></pre>
+<p>模板里的 POST 表单包含 <code>{% csrf_token %}</code>，入口链接通过路由名生成。保存后浏览器发起一次新的 GET，刷新列表时就只会重新查询。</p>
+<p>这里遇到过一次列表模板错误。日志显示新增请求先返回 <code>302</code>，随后列表的 GET 才返回 <code>500</code>。沿着视图顺序看，保存已经执行，失败发生在重定向后的模板渲染。修复模板后，直接刷新列表就看到了已保存的文章。这次让我学会了把浏览器的一次操作拆成多条 HTTP 请求来看。</p>
+<h2 id="21-postgresql">从 21 秒定位到 PostgreSQL 连接</h2>
+<p>列表可以打开以后，浏览器的 Network 面板还显示一次请求用了约 21 秒。随后把数据库建立连接和执行查询分开测量，结果如下。</p>
+<table>
+<thead>
+<tr>
+<th>测量项</th>
+<th>会话中的实测</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>用 <code>localhost</code> 建立 PostgreSQL 连接</td>
+<td>21.09 秒，期间 <code>::1</code> 连接超时</td>
+</tr>
+<tr>
+<td>改用 <code>127.0.0.1</code> 建立连接</td>
+<td>约 32 毫秒</td>
+</tr>
+<tr>
+<td>执行文章查询</td>
+<td>约 6 毫秒</td>
+</tr>
+<tr>
+<td>新进程中 Django 测试客户端首次请求列表</td>
+<td>约 144 毫秒，返回 200</td>
+</tr>
+</tbody>
+</table>
+<p>这套本地环境在尝试 IPv6 回环地址时耗掉了大部分时间。我把本地 <code>POSTGRES_HOST</code> 改为 <code>127.0.0.1</code>，让连接直接走 IPv4。144 毫秒来自重新加载配置后的 Django 测试客户端。已有的 <code>runserver</code> 需要重启后，再从浏览器复测。</p>
+<h2 id="_2">编辑时让表单绑定已有文章</h2>
+<p>编辑路由用 <code>&lt;int:pk&gt;/edit/</code> 把主键传给视图。视图先用 <code>get_object_or_404(Article, pk=pk)</code> 取记录，再复用新增用过的表单和模板。</p>
+<ul>
+<li><strong>GET</strong> 使用 <code>ArticleForm(instance=article)</code>，表单预填已有的标题和正文。</li>
+<li><strong>POST</strong> 使用 <code>ArticleForm(request.POST, instance=article)</code>，通过校验后更新同一条记录。</li>
+<li>模板从 <code>page_title</code> 判断显示“新增文章”还是“编辑文章”，表单提交到当前地址。</li>
+</ul>
+<p>我在列表里点进一篇文章，确认表单显示的是它原来的内容。保存后核对同一篇文章发生变化，文章总数保持不变。这个验证可以抓到编辑 POST 漏传 <code>instance</code> 的问题，因为那会让 <code>form.save()</code> 新建一条记录。</p>
+<h2 id="_3">删除分成确认和执行两步</h2>
+<p>删除沿用按主键取对象的方式。<code>GET /articles/&lt;pk&gt;/delete/</code> 显示待删除文章的标题，用户可以取消。点击确认后，表单带着 CSRF 令牌向同一地址发送 POST，视图才调用 <code>article.delete()</code> 并重定向回列表。主键已经在 URL 里，表单无需再传一次。</p>
+<p>练习的最后一步是用同一篇文章串起整个流程：新增后在列表里看到它，编辑后确认总数没变，进入删除确认页核对修改后的标题，取消时文章仍在，确认后列表只少这一篇。到这里，Shell 里的 ORM 操作已经接到了真实的网页请求上。</p>
+          </section>
+        </div>
+      </article>
+</div>
+
+    <!-- footer container -->
+<footer id="footer" class="footer">
+  <div class="footer-container">
+
+    <div class="social-icons">
+
+
+
+
+
+
+
+
+          <a href="https://github.com/nian0122/" class="soft-size--primary soft-style--box" target="_blank" rel="noopener noreferrer">
+            <svg class="icon icon-github" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <path d="M64.6 512c0 195.6 125.4 361.9 300.1 422.9 23.5 5.9 19.9-10.8 19.9-22.2v-77.6c-135.8 15.9-141.3-74-150.5-89-18.5-31.5-61.9-39.5-49-54.5 31-15.9 62.5 4 98.9 58 26.4 39.1 77.9 32.5 104.1 26 5.7-23.5 17.9-44.5 34.7-60.9-140.7-25.2-199.4-111.1-199.4-213.3 0-49.5 16.4-95.1 48.4-131.8-20.4-60.6 1.9-112.4 4.9-120.1 58.2-5.2 118.5 41.6 123.3 45.3 33.1-8.9 70.8-13.7 112.9-13.7 42.4 0 80.3 4.9 113.5 13.9 11.3-8.6 67.3-48.8 121.4-43.9 2.9 7.7 24.7 58.3 5.5 118.1 32.5 36.8 49 82.8 49 132.4 0 102.3-59 188.3-200.2 213.2 23.5 23.3 38.1 55.5 38.1 91.1v112.7c0.8 9 0 17.9 15.1 17.9C832.7 877 960.4 709.4 960.4 512.1c0-247.5-200.6-447.9-447.9-447.9C265 64.1 64.6 264.5 64.6 512z"></path>
+</svg>
+          </a>
+
+
+    </div>
+
+    <p>&copy; 2026 <a href="/" target="_blank">Nianer</a></p>
+
+
+
+    <p>Powered by <a href="https://hexo.io" target="_blank" rel="noopener noreferrer">Hexo</a> Theme - <a href="https://github.com/miiiku/flex-block" target="_blank" rel="noopener noreferrer author">flex-block</a></p>
+
+    <p>
+      <a href="javascript:;" id="theme-light">🌞 浅色</a>
+      <a href="javascript:;" id="theme-dark">🌛 深色</a>
+      <a href="javascript:;" id="theme-auto">🤖️ 自动</a>
+    </p>
+  </div>
+</footer>
+  </div>
+
+  <div class="back-to-top-fixed soft-size--round soft-style--box">
+    <svg class="icon icon-back-to-top" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg">
+      <path d="M725.333333 426.666667c-12.8 0-21.333333-4.266667-29.866667-12.8l-213.333333-213.333333c-17.066667-17.066667-17.066667-42.666667 0-59.733333s42.666667-17.066667 59.733333 0l213.333333 213.333333c17.066667 17.066667 17.066667 42.666667 0 59.733333C746.666667 422.4 738.133333 426.666667 725.333333 426.666667z"></path>
+      <path d="M298.666667 426.666667c-12.8 0-21.333333-4.266667-29.866667-12.8-17.066667-17.066667-17.066667-42.666667 0-59.733333l213.333333-213.333333c17.066667-17.066667 42.666667-17.066667 59.733333 0s17.066667 42.666667 0 59.733333l-213.333333 213.333333C320 422.4 311.466667 426.666667 298.666667 426.666667z"></path>
+      <path d="M512 896c-25.6 0-42.666667-17.066667-42.666667-42.666667L469.333333 170.666667c0-25.6 17.066667-42.666667 42.666667-42.666667s42.666667 17.066667 42.666667 42.666667l0 682.666667C554.666667 878.933333 537.6 896 512 896z"></path>
+    </svg>
+  </div>
+
+
+  <!-- aplayer -->
+
+
+<!-- dplayer -->
+
+
+<!-- copy button  -->
+<script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.11/dist/clipboard.min.js"></script>
+
+<!-- https://clipboardjs.com/ -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+  <!-- 尾部用户自定义相关内容 -->
+</body>
+</html>
